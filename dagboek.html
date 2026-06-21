@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dagboek</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --amber: #f59e0b;
+      --amber-glow: #f59e0b40;
+      --violet: #a78bfa;
+      --violet-glow: #a78bfa35;
+      --blue: #38bdf8;
+      --green: #22c55e;
+      --surface: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.08);
+      --border-hover: rgba(255,255,255,0.16);
+      --text: #f1f5f9;
+      --muted: #64748b;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: #060912;
+      color: var(--text);
+      min-height: 100vh;
+      padding: 3rem 1.2rem 6rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before, body::after {
+      content: '';
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    body::before {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, #6366f120, transparent 70%);
+      top: -200px; right: -200px;
+    }
+    body::after {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, #0ea5e915, transparent 70%);
+      bottom: -100px; left: -150px;
+    }
+
+    .page {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 440px;
+      display: flex; flex-direction: column; align-items: center;
+    }
+
+    /* ── Header ── */
+    header { text-align: center; margin-bottom: 2.5rem; }
+
+    .tagline {
+      font-size: 0.7rem; font-weight: 600;
+      letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--violet); margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-size: 2rem; font-weight: 800;
+      background: linear-gradient(135deg, #f1f5f9 30%, #94a3b8);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; line-height: 1.1;
+    }
+
+    .datum { color: var(--muted); font-size: 0.82rem; margin-top: 0.5rem; }
+
+    /* ── Glass card ── */
+    .card {
+      background: var(--surface);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border); border-radius: 24px;
+      padding: 2rem; width: 100%;
+      display: flex; flex-direction: column; gap: 2rem;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+
+    .section-label {
+      font-size: 0.7rem; font-weight: 700;
+      letter-spacing: 0.15em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 1rem;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* ── Steps ── */
+    .steps-display { text-align: center; margin-bottom: 1.2rem; }
+
+    .steps-number {
+      font-size: 3.5rem; font-weight: 800; line-height: 1;
+      background: linear-gradient(135deg, var(--amber), #fbbf24);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; letter-spacing: -0.02em;
+    }
+
+    .steps-unit { font-size: 0.8rem; color: var(--muted); font-weight: 500; margin-top: 0.2rem; }
+
+    .steps-controls {
+      display: grid; grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 0.5rem; margin-bottom: 1.2rem;
+    }
+
+    .step-pill {
+      background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2);
+      color: var(--amber); font-size: 0.78rem; font-weight: 600;
+      padding: 0.55rem 0; border-radius: 100px; cursor: pointer;
+      transition: all 0.15s; letter-spacing: 0.02em; font-family: inherit;
+    }
+    .step-pill:hover { background: rgba(245,158,11,0.18); border-color: rgba(245,158,11,0.5); transform: translateY(-1px); }
+    .step-pill:active { transform: translateY(0); }
+
+    input[type="number"].steps-raw {
+      width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--border);
+      border-radius: 12px; color: #fff; font-size: 1rem; font-weight: 600;
+      font-family: inherit; padding: 0.7rem 1rem; outline: none;
+      -moz-appearance: textfield; text-align: center; transition: border-color 0.2s;
+    }
+    input[type="number"].steps-raw::-webkit-inner-spin-button,
+    input[type="number"].steps-raw::-webkit-outer-spin-button { -webkit-appearance: none; }
+    input[type="number"].steps-raw:focus { border-color: var(--amber); box-shadow: 0 0 0 3px var(--amber-glow); }
+
+    .ring-wrap { display: flex; align-items: center; gap: 1.2rem; margin-top: 1rem; }
+    .ring-wrap svg { flex-shrink: 0; }
+    .ring-track { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 5; }
+    .ring-fill {
+      fill: none; stroke-width: 5; stroke-linecap: round;
+      stroke: url(#amberGrad);
+      transition: stroke-dashoffset 0.5s cubic-bezier(0.4,0,0.2,1);
+    }
+    .ring-info { flex: 1; }
+    .ring-pct { font-size: 1.4rem; font-weight: 800; color: var(--amber); }
+    .ring-label { font-size: 0.75rem; color: var(--muted); margin-top: 0.1rem; }
+    .ring-goal { font-size: 0.7rem; color: var(--muted); margin-top: 0.5rem; }
+    .ring-goal strong { color: var(--text); }
+
+    /* ── Sleep ── */
+    .sleep-value-row { display: flex; align-items: baseline; gap: 0.4rem; margin-bottom: 1rem; }
+    .sleep-big { font-size: 3rem; font-weight: 800; color: var(--violet); line-height: 1; }
+    .sleep-unit { font-size: 1rem; color: var(--muted); font-weight: 500; }
+
+    .sleep-status {
+      display: inline-block; font-size: 0.72rem; font-weight: 600;
+      padding: 0.25rem 0.7rem; border-radius: 100px; margin-bottom: 1rem;
+      background: rgba(167,139,250,0.12); color: var(--violet);
+      border: 1px solid rgba(167,139,250,0.25);
+    }
+
+    input[type="range"].sleep-range {
+      -webkit-appearance: none; width: 100%; height: 6px; border-radius: 3px;
+      background: rgba(167,139,250,0.15); outline: none; cursor: pointer;
+    }
+    input[type="range"].sleep-range::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
+      background: linear-gradient(135deg, #a78bfa, #7c3aed); cursor: pointer;
+      box-shadow: 0 0 0 3px rgba(167,139,250,0.2), 0 2px 8px rgba(167,139,250,0.4);
+      transition: box-shadow 0.15s;
+    }
+    input[type="range"].sleep-range::-webkit-slider-thumb:hover {
+      box-shadow: 0 0 0 5px rgba(167,139,250,0.3), 0 2px 12px rgba(167,139,250,0.5);
+    }
+
+    .sleep-ticks { display: flex; justify-content: space-between; margin-top: 0.5rem; padding: 0 2px; }
+    .sleep-ticks span { font-size: 0.65rem; color: var(--muted); }
+
+    /* ── Mood ── */
+    .mood-grid { display: flex; gap: 0.5rem; }
+
+    .mood-btn {
+      flex: 1; background: rgba(255,255,255,0.03);
+      border: 1.5px solid var(--border); border-radius: 16px;
+      padding: 0.9rem 0.2rem 0.7rem; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+      transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+      position: relative; overflow: hidden;
+    }
+    .mood-btn::before {
+      content: ''; position: absolute; inset: 0;
+      background: var(--c); opacity: 0; transition: opacity 0.2s;
+    }
+    .mood-btn:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+    .mood-btn.selected {
+      border-color: var(--c); transform: translateY(-3px);
+      box-shadow: 0 8px 20px color-mix(in srgb, var(--c) 25%, transparent);
+    }
+    .mood-btn.selected::before { opacity: 0.1; }
+    .mood-emoji { font-size: 1.8rem; line-height: 1; position: relative; transition: transform 0.2s; }
+    .mood-btn:hover .mood-emoji, .mood-btn.selected .mood-emoji { transform: scale(1.15); }
+    .mood-name { font-size: 0.6rem; font-weight: 600; letter-spacing: 0.05em; color: var(--muted); position: relative; transition: color 0.2s; }
+    .mood-btn.selected .mood-name { color: var(--c); }
+
+    /* ── Save ── */
+    .save-btn {
+      position: relative; width: 100%; padding: 1rem; border: none;
+      border-radius: 16px; font-family: inherit; font-size: 0.95rem;
+      font-weight: 700; letter-spacing: 0.04em; color: #fff; cursor: pointer;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #38bdf8 100%);
+      background-size: 200% 200%; background-position: 0% 50%;
+      transition: all 0.3s ease; box-shadow: 0 4px 20px rgba(99,102,241,0.35);
+      overflow: hidden;
+    }
+    .save-btn::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, transparent, rgba(255,255,255,0.1), transparent);
+      transform: translateX(-100%); transition: transform 0.5s ease;
+    }
+    .save-btn:hover { background-position: 100% 50%; box-shadow: 0 6px 30px rgba(99,102,241,0.5); transform: translateY(-1px); }
+    .save-btn:hover::after { transform: translateX(100%); }
+    .save-btn:active { transform: translateY(0); }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 2.5rem; left: 50%;
+      transform: translateX(-50%) translateY(5rem);
+      color: #fff; font-weight: 600; font-size: 0.85rem;
+      padding: 0.75rem 2rem; border-radius: 100px;
+      box-shadow: 0 4px 20px rgba(34,197,94,0.35);
+      transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+      pointer-events: none; z-index: 99; white-space: nowrap;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── Tabs ── */
+    .tabs-wrap { width: 100%; margin-top: 2.5rem; }
+
+    .tab-bar {
+      display: flex; gap: 0.4rem;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 0.3rem; margin-bottom: 1.2rem;
+    }
+
+    .tab-btn {
+      flex: 1; padding: 0.55rem 0.5rem;
+      background: none; border: none; border-radius: 10px;
+      font-family: inherit; font-size: 0.8rem; font-weight: 600;
+      color: var(--muted); cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab-btn.active { background: rgba(255,255,255,0.08); color: var(--text); }
+    .tab-btn:hover:not(.active) { color: #94a3b8; }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Charts ── */
+    .chart-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 1.4rem 1.4rem 1rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .chart-header {
+      display: flex; align-items: baseline;
+      justify-content: space-between; margin-bottom: 1rem;
+    }
+
+    .chart-title {
+      font-size: 0.72rem; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+    }
+
+    .chart-avg {
+      font-size: 0.72rem; font-weight: 600; color: var(--muted);
+    }
+
+    .chart-avg span { font-weight: 700; }
+
+    .chart-wrap { position: relative; height: 130px; }
+
+    /* ── History ── */
+    .data-toolbar {
+      display: flex; gap: 0.5rem; width: 100%; margin-bottom: 1rem;
+    }
+
+    .toolbar-btn {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      gap: 0.4rem; padding: 0.6rem 0.8rem;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; color: var(--muted);
+      font-family: inherit; font-size: 0.75rem; font-weight: 600;
+      cursor: pointer; transition: all 0.15s; white-space: nowrap;
+    }
+    .toolbar-btn:hover { border-color: var(--border-hover); color: var(--text); transform: translateY(-1px); }
+    .toolbar-btn.export:hover { border-color: rgba(56,189,248,0.4); color: var(--blue); }
+    .toolbar-btn.import:hover { border-color: rgba(167,139,250,0.4); color: var(--violet); }
+    #importInput { display: none; }
+
+    .history { width: 100%; display: flex; flex-direction: column; gap: 0.6rem; }
+
+    .history-item {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 18px; padding: 1.1rem 1.3rem;
+      display: flex; align-items: center; gap: 1rem;
+      transition: border-color 0.2s, transform 0.15s;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .history-item:hover { border-color: var(--border-hover); transform: translateX(2px); }
+
+    .hi-date { flex: 1; }
+    .hi-day { font-size: 0.88rem; font-weight: 600; color: var(--text); text-transform: capitalize; }
+    .hi-date-sub { font-size: 0.7rem; color: var(--muted); margin-top: 0.1rem; }
+
+    .hi-stats { display: flex; gap: 1.2rem; align-items: center; }
+
+    .hi-stat { display: flex; flex-direction: column; align-items: center; gap: 0.1rem; }
+    .hi-val { font-size: 0.88rem; font-weight: 700; line-height: 1; }
+    .hi-lbl { font-size: 0.58rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+    .hi-steps .hi-val { color: var(--amber); }
+    .hi-sleep .hi-val { color: var(--violet); }
+    .hi-mood .hi-val { font-size: 1.3rem; }
+
+    .hi-divider { width: 1px; height: 28px; background: var(--border); }
+
+    .hi-del {
+      background: none; border: none; color: var(--muted); cursor: pointer;
+      font-size: 0.9rem; width: 28px; height: 28px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s; flex-shrink: 0;
+    }
+    .hi-del:hover { background: rgba(239,68,68,0.12); color: #ef4444; }
+
+    .hist-header-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .hist-title { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+    .hist-count { font-size: 0.7rem; color: var(--muted); background: var(--surface); border: 1px solid var(--border); padding: 0.15rem 0.6rem; border-radius: 100px; }
+
+    .empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--muted); }
+    .empty-icon { font-size: 2.5rem; margin-bottom: 0.8rem; }
+    .empty-text { font-size: 0.85rem; line-height: 1.5; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <p class="tagline">Dagelijks overzicht</p>
+    <h1>Mijn dagboek</h1>
+    <p class="datum" id="datum"></p>
+  </header>
+
+  <div class="card">
+    <!-- STAPPEN -->
+    <div>
+      <p class="section-label">🏃 Stappen</p>
+      <div class="steps-display">
+        <div class="steps-number" id="stepsDisplay">0</div>
+        <div class="steps-unit">stappen vandaag</div>
+      </div>
+      <div class="steps-controls">
+        <button class="step-pill" onclick="changeSteps(500)">+500</button>
+        <button class="step-pill" onclick="changeSteps(1000)">+1 000</button>
+        <button class="step-pill" onclick="changeSteps(2500)">+2 500</button>
+        <button class="step-pill" onclick="changeSteps(5000)">+5 000</button>
+      </div>
+      <input type="number" class="steps-raw" id="stappen" value="0" min="0" max="99999"
+        placeholder="Of typ hier een getal" oninput="updateSteps()">
+      <div class="ring-wrap">
+        <svg width="56" height="56" viewBox="0 0 56 56">
+          <defs>
+            <linearGradient id="amberGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" style="stop-color:#f59e0b"/>
+              <stop offset="100%" style="stop-color:#fbbf24"/>
+            </linearGradient>
+          </defs>
+          <circle class="ring-track" cx="28" cy="28" r="23"/>
+          <circle class="ring-fill" id="ringFill" cx="28" cy="28" r="23"
+            stroke-dasharray="144.5" stroke-dashoffset="144.5"
+            transform="rotate(-90 28 28)"/>
+        </svg>
+        <div class="ring-info">
+          <div class="ring-pct" id="ringPct">0%</div>
+          <div class="ring-label" id="stepsStatus">Nog niet gestart</div>
+          <div class="ring-goal">Doel: <strong>10 000 stappen</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLAAP -->
+    <div>
+      <p class="section-label">🌙 Slaap</p>
+      <div class="sleep-value-row">
+        <span class="sleep-big" id="slaapBig">7</span>
+        <span class="sleep-unit">uur</span>
+      </div>
+      <div class="sleep-status" id="slaapStatus">Goed geslapen 👍</div>
+      <input type="range" class="sleep-range" min="0" max="12" step="0.5" value="7"
+        id="slaap" oninput="updateSlaap()">
+      <div class="sleep-ticks">
+        <span>0u</span><span>3u</span><span>6u</span><span>9u</span><span>12u</span>
+      </div>
+    </div>
+
+    <!-- HUMEUR -->
+    <div>
+      <p class="section-label">💬 Humeur</p>
+      <div class="mood-grid">
+        <button class="mood-btn" style="--c:#ef4444" onclick="selectMood(1,this)">
+          <span class="mood-emoji">😣</span><span class="mood-name">Slecht</span>
+        </button>
+        <button class="mood-btn" style="--c:#f97316" onclick="selectMood(2,this)">
+          <span class="mood-emoji">😕</span><span class="mood-name">Matig</span>
+        </button>
+        <button class="mood-btn" style="--c:#eab308" onclick="selectMood(3,this)">
+          <span class="mood-emoji">😐</span><span class="mood-name">Oké</span>
+        </button>
+        <button class="mood-btn" style="--c:#22c55e" onclick="selectMood(4,this)">
+          <span class="mood-emoji">🙂</span><span class="mood-name">Goed</span>
+        </button>
+        <button class="mood-btn" style="--c:#38bdf8" onclick="selectMood(5,this)">
+          <span class="mood-emoji">😄</span><span class="mood-name">Super</span>
+        </button>
+      </div>
+    </div>
+
+    <button class="save-btn" onclick="save()">Dag opslaan</button>
+  </div>
+
+  <!-- ── Tabs ── -->
+  <div class="tabs-wrap">
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('grafieken',this)">📊 Grafieken</button>
+      <button class="tab-btn" onclick="switchTab('geschiedenis',this)">📋 Geschiedenis</button>
+    </div>
+
+    <!-- GRAFIEKEN -->
+    <div class="tab-panel active" id="tab-grafieken">
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <span class="chart-title">🏃 Stappen</span>
+          <span class="chart-avg" id="avgStappen">gem. <span>—</span></span>
+        </div>
+        <div class="chart-wrap"><canvas id="chartStappen"></canvas></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <span class="chart-title">🌙 Slaap</span>
+          <span class="chart-avg" id="avgSlaap">gem. <span>—</span></span>
+        </div>
+        <div class="chart-wrap"><canvas id="chartSlaap"></canvas></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <span class="chart-title">💬 Humeur</span>
+          <span class="chart-avg" id="avgHumeur">gem. <span>—</span></span>
+        </div>
+        <div class="chart-wrap"><canvas id="chartHumeur"></canvas></div>
+      </div>
+
+    </div>
+
+    <!-- GESCHIEDENIS -->
+    <div class="tab-panel" id="tab-geschiedenis">
+      <div class="hist-header-row">
+        <span class="hist-title">Alle dagen</span>
+        <span class="hist-count" id="histCount">0 dagen</span>
+      </div>
+      <div class="data-toolbar">
+        <button class="toolbar-btn export" onclick="exportData()">↓ Exporteer</button>
+        <button class="toolbar-btn import" onclick="document.getElementById('importInput').click()">↑ Importeer</button>
+        <input type="file" id="importInput" accept=".json" onchange="importData(this)">
+      </div>
+      <div class="history" id="history"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast">Dag opgeslagen ✓</div>
+
+<script>
+  const GOAL = 10000;
+  const CIRC = 2 * Math.PI * 23;
+  const MOODS = ['','😣','😕','😐','🙂','😄'];
+  const MOOD_COLORS = ['','#ef4444','#f97316','#eab308','#22c55e','#38bdf8'];
+  let selectedMood = 0;
+  let charts = {};
+
+  // Chart.js global defaults
+  Chart.defaults.font.family = "'Inter', sans-serif";
+  Chart.defaults.color = '#64748b';
+
+  document.getElementById('datum').textContent = new Date().toLocaleDateString('nl-BE', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+  });
+
+  /* ── Form ── */
+  function changeSteps(n) {
+    const el = document.getElementById('stappen');
+    el.value = Math.max(0, (parseInt(el.value) || 0) + n);
+    updateSteps();
+  }
+
+  function updateSteps() {
+    const v = Math.max(0, parseInt(document.getElementById('stappen').value) || 0);
+    document.getElementById('stepsDisplay').textContent = v.toLocaleString('nl');
+    const pct = Math.min(100, (v / GOAL) * 100);
+    document.getElementById('ringFill').style.strokeDashoffset = CIRC * (1 - pct / 100);
+    document.getElementById('ringPct').textContent = Math.round(pct) + '%';
+    document.getElementById('stepsStatus').textContent =
+      v === 0        ? 'Nog niet gestart' :
+      v < 3000       ? 'Kleine wandeling'  :
+      v < 6000       ? 'Goed bezig!'       :
+      v < 10000      ? 'Bijna op doel 💪'  : 'Doel bereikt! 🎉';
+  }
+
+  function updateSlaap() {
+    const v = parseFloat(document.getElementById('slaap').value);
+    document.getElementById('slaapBig').textContent = Math.floor(v) + (v % 1 ? '½' : '');
+    document.getElementById('slaapStatus').textContent =
+      v < 5   ? 'Te weinig slaap 😬' :
+      v < 6.5 ? 'Iets te kort 😕'    :
+      v < 8.5 ? 'Goed geslapen 👍'   : 'Lekker lang geslapen 😴';
+  }
+
+  function selectMood(n, btn) {
+    document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedMood = n;
+  }
+
+  /* ── Data ── */
+  function today() { return new Date().toISOString().slice(0, 10); }
+  function getAll() {
+    try { return JSON.parse(localStorage.getItem('dagboek') || '{}'); } catch { return {}; }
+  }
+
+  function save() {
+    if (!selectedMood) { showToast('Kies eerst je humeur 👆', '#ef4444'); return; }
+    const all = getAll();
+    all[today()] = {
+      stappen: parseInt(document.getElementById('stappen').value) || 0,
+      slaap:   parseFloat(document.getElementById('slaap').value),
+      humeur:  selectedMood,
+    };
+    localStorage.setItem('dagboek', JSON.stringify(all));
+    renderAll();
+    showToast('Dag opgeslagen ✓', '#22c55e');
+  }
+
+  function deleteEntry(k) {
+    const all = getAll();
+    delete all[k];
+    localStorage.setItem('dagboek', JSON.stringify(all));
+    renderAll();
+  }
+
+  function exportData() {
+    const all = getAll();
+    if (!Object.keys(all).length) { showToast('Geen data om te exporteren', '#ef4444'); return; }
+    const blob = new Blob([JSON.stringify(all, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'dagboek.json'; a.click();
+    URL.revokeObjectURL(url);
+    showToast('Bestand gedownload ✓', '#38bdf8');
+  }
+
+  function importData(input) {
+    const file = input.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const imp = JSON.parse(e.target.result);
+        if (typeof imp !== 'object' || Array.isArray(imp)) throw new Error();
+        localStorage.setItem('dagboek', JSON.stringify({ ...getAll(), ...imp }));
+        renderAll();
+        showToast(`${Object.keys(imp).length} dagen geïmporteerd ✓`, '#22c55e');
+      } catch { showToast('Ongeldig bestand', '#ef4444'); }
+      input.value = '';
+    };
+    reader.readAsText(file);
+  }
+
+  /* ── Render ── */
+  function renderAll() {
+    renderHistory();
+    renderCharts();
+  }
+
+  function renderHistory() {
+    const all = getAll();
+    const keys = Object.keys(all).sort().reverse();
+    const el = document.getElementById('history');
+    document.getElementById('histCount').textContent = keys.length + (keys.length === 1 ? ' dag' : ' dagen');
+
+    if (!keys.length) {
+      el.innerHTML = `<div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <div class="empty-text">Nog niets opgeslagen.<br>Vul je eerste dag in hierboven.</div>
+      </div>`;
+      return;
+    }
+
+    el.innerHTML = keys.map(k => {
+      const e = all[k];
+      const d = new Date(k + 'T00:00:00');
+      return `
+      <div class="history-item">
+        <div class="hi-date">
+          <div class="hi-day">${d.toLocaleDateString('nl-BE', { weekday: 'long' })}</div>
+          <div class="hi-date-sub">${d.toLocaleDateString('nl-BE', { day: 'numeric', month: 'long' })}</div>
+        </div>
+        <div class="hi-stats">
+          <div class="hi-stat hi-steps">
+            <span class="hi-val">${e.stappen.toLocaleString('nl')}</span>
+            <span class="hi-lbl">stappen</span>
+          </div>
+          <div class="hi-divider"></div>
+          <div class="hi-stat hi-sleep">
+            <span class="hi-val">${e.slaap}u</span>
+            <span class="hi-lbl">slaap</span>
+          </div>
+          <div class="hi-divider"></div>
+          <div class="hi-stat hi-mood">
+            <span class="hi-val">${MOODS[e.humeur]}</span>
+            <span class="hi-lbl">humeur</span>
+          </div>
+        </div>
+        <button class="hi-del" onclick="deleteEntry('${k}')" title="Verwijder">✕</button>
+      </div>`;
+    }).join('');
+  }
+
+  function renderCharts() {
+    const all = getAll();
+    const keys = Object.keys(all).sort().slice(-14); // last 14 days
+
+    const labels = keys.map(k => {
+      const d = new Date(k + 'T00:00:00');
+      return d.toLocaleDateString('nl-BE', { day: 'numeric', month: 'short' });
+    });
+
+    const stappen = keys.map(k => all[k].stappen);
+    const slaap   = keys.map(k => all[k].slaap);
+    const humeur  = keys.map(k => all[k].humeur);
+
+    // Averages
+    const avg = arr => arr.length ? arr.reduce((a,b) => a+b, 0) / arr.length : null;
+
+    if (stappen.length) {
+      document.getElementById('avgStappen').innerHTML =
+        `gem. <span>${Math.round(avg(stappen)).toLocaleString('nl')} stappen</span>`;
+      document.getElementById('avgSlaap').innerHTML =
+        `gem. <span>${avg(slaap).toFixed(1)}u slaap</span>`;
+      const moodAvg = avg(humeur);
+      document.getElementById('avgHumeur').innerHTML =
+        `gem. <span>${MOODS[Math.round(moodAvg)]} (${moodAvg.toFixed(1)})</span>`;
+    }
+
+    const gridColor = 'rgba(255,255,255,0.05)';
+    const tickColor = '#475569';
+    const baseOpts = {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { displayColors: false, padding: 10,
+        backgroundColor: 'rgba(15,20,40,0.95)', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1,
+        titleFont: { weight: '600', size: 12 }, bodyFont: { size: 12 } } },
+      scales: {
+        x: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 10 } } },
+        y: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 10 } } }
+      }
+    };
+
+    /* Steps — bar chart */
+    buildChart('chartStappen', 'bar', labels, [{
+      data: stappen,
+      backgroundColor: ctx => {
+        const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 130);
+        g.addColorStop(0, 'rgba(245,158,11,0.85)');
+        g.addColorStop(1, 'rgba(245,158,11,0.2)');
+        return g;
+      },
+      borderColor: '#f59e0b',
+      borderWidth: 1.5,
+      borderRadius: 6,
+      hoverBackgroundColor: '#f59e0b',
+    }], {
+      ...baseOpts,
+      plugins: { ...baseOpts.plugins,
+        tooltip: { ...baseOpts.plugins.tooltip,
+          callbacks: { label: c => `  ${c.parsed.y.toLocaleString('nl')} stappen` } },
+        annotation: keys.length ? {
+          annotations: { goal: {
+            type: 'line', yMin: GOAL, yMax: GOAL,
+            borderColor: 'rgba(245,158,11,0.4)', borderWidth: 1,
+            borderDash: [4, 4],
+            label: { content: 'doel', display: true, position: 'end',
+              color: 'rgba(245,158,11,0.6)', font: { size: 10 }, backgroundColor: 'transparent' }
+          }}
+        } : {}
+      },
+      scales: { ...baseOpts.scales, y: { ...baseOpts.scales.y, min: 0,
+        ticks: { ...baseOpts.scales.y.ticks, callback: v => v >= 1000 ? (v/1000)+'k' : v } } }
+    });
+
+    /* Sleep — line chart with fill */
+    buildChart('chartSlaap', 'line', labels, [{
+      data: slaap,
+      borderColor: '#a78bfa',
+      borderWidth: 2.5,
+      pointBackgroundColor: '#a78bfa',
+      pointBorderColor: '#060912',
+      pointBorderWidth: 2,
+      pointRadius: 5,
+      pointHoverRadius: 7,
+      tension: 0.4,
+      fill: true,
+      backgroundColor: ctx => {
+        const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 130);
+        g.addColorStop(0, 'rgba(167,139,250,0.3)');
+        g.addColorStop(1, 'rgba(167,139,250,0.02)');
+        return g;
+      },
+    }], {
+      ...baseOpts,
+      plugins: { ...baseOpts.plugins,
+        tooltip: { ...baseOpts.plugins.tooltip,
+          callbacks: { label: c => `  ${c.parsed.y}u slaap` } } },
+      scales: { ...baseOpts.scales,
+        y: { ...baseOpts.scales.y, min: 0, max: 12,
+          ticks: { ...baseOpts.scales.y.ticks, callback: v => v + 'u', stepSize: 3 } } }
+    });
+
+    /* Mood — line chart with colored points */
+    const moodPointColors = humeur.map(h => MOOD_COLORS[h] || '#64748b');
+    buildChart('chartHumeur', 'line', labels, [{
+      data: humeur,
+      borderColor: 'rgba(99,102,241,0.6)',
+      borderWidth: 2,
+      pointBackgroundColor: moodPointColors,
+      pointBorderColor: '#060912',
+      pointBorderWidth: 2,
+      pointRadius: 7,
+      pointHoverRadius: 9,
+      tension: 0.4,
+      fill: true,
+      backgroundColor: ctx => {
+        const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 130);
+        g.addColorStop(0, 'rgba(99,102,241,0.2)');
+        g.addColorStop(1, 'rgba(99,102,241,0.02)');
+        return g;
+      },
+    }], {
+      ...baseOpts,
+      plugins: { ...baseOpts.plugins,
+        tooltip: { ...baseOpts.plugins.tooltip,
+          callbacks: { label: c => `  ${MOODS[c.parsed.y]}` } } },
+      scales: { ...baseOpts.scales,
+        y: { ...baseOpts.scales.y, min: 0.5, max: 5.5, stepSize: 1,
+          ticks: { ...baseOpts.scales.y.ticks,
+            callback: v => ['','😣','😕','😐','🙂','😄'][v] || '' } } }
+    });
+  }
+
+  function buildChart(id, type, labels, datasets, options) {
+    if (charts[id]) charts[id].destroy();
+    const ctx = document.getElementById(id).getContext('2d');
+    charts[id] = new Chart(ctx, { type, data: { labels, datasets }, options });
+  }
+
+  /* ── Tabs ── */
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + name).classList.add('active');
+    if (name === 'grafieken') renderCharts();
+  }
+
+  /* ── Toast ── */
+  function showToast(msg, color = '#22c55e') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.background = `linear-gradient(135deg, ${color}, ${color}cc)`;
+    t.style.boxShadow = `0 4px 20px ${color}55`;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  /* ── Init ── */
+  updateSteps();
+  updateSlaap();
+  renderAll();
+
+  const saved = getAll()[today()];
+  if (saved) {
+    document.getElementById('stappen').value = saved.stappen;
+    updateSteps();
+    document.getElementById('slaap').value = saved.slaap;
+    updateSlaap();
+    document.querySelectorAll('.mood-btn')[saved.humeur - 1]?.click();
+  }
+</script>
+</body>
+</html>
