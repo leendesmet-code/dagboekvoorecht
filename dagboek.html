@@ -2,818 +2,780 @@
 <html lang="nl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dagboek</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#070B14">
+  <title>Dopamine Coach</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
     :root {
-      --amber: #f59e0b;
-      --amber-glow: #f59e0b40;
-      --violet: #a78bfa;
-      --violet-glow: #a78bfa35;
-      --blue: #38bdf8;
-      --green: #22c55e;
-      --surface: rgba(255,255,255,0.04);
+      --bg: #070B14;
+      --surface: rgba(255,255,255,0.05);
       --border: rgba(255,255,255,0.08);
-      --border-hover: rgba(255,255,255,0.16);
-      --text: #f1f5f9;
-      --muted: #64748b;
+      --border-2: rgba(255,255,255,0.16);
+      --text: #F1F5F9;
+      --text-2: #94A3B8;
+      --text-3: #475569;
+      --violet: #8B5CF6;
+      --violet-l: #A78BFA;
+      --blue: #38BDF8;
+      --green: #10B981;
+      --amber: #F59E0B;
+      --red: #EF4444;
+      --nav-h: 72px;
+      --safe-b: env(safe-area-inset-bottom, 0px);
     }
+
+    html { -webkit-text-size-adjust: 100%; }
 
     body {
       font-family: 'Inter', -apple-system, sans-serif;
-      background: #060912;
+      background: var(--bg);
       color: var(--text);
       min-height: 100vh;
-      padding: 3rem 1.2rem 6rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      position: relative;
+      min-height: 100dvh;
       overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
     }
 
-    body::before, body::after {
-      content: '';
-      position: fixed;
-      border-radius: 50%;
-      filter: blur(120px);
-      pointer-events: none;
-      z-index: 0;
-    }
-    body::before {
-      width: 600px; height: 600px;
-      background: radial-gradient(circle, #6366f120, transparent 70%);
-      top: -200px; right: -200px;
-    }
-    body::after {
-      width: 500px; height: 500px;
-      background: radial-gradient(circle, #0ea5e915, transparent 70%);
-      bottom: -100px; left: -150px;
-    }
+    #app { max-width: 430px; margin: 0 auto; min-height: 100vh; }
 
-    .page {
-      position: relative; z-index: 1;
-      width: 100%; max-width: 440px;
-      display: flex; flex-direction: column; align-items: center;
-    }
-
-    /* ── Header ── */
-    header { text-align: center; margin-bottom: 2.5rem; }
-
-    .tagline {
-      font-size: 0.7rem; font-weight: 600;
-      letter-spacing: 0.2em; text-transform: uppercase;
-      color: var(--violet); margin-bottom: 0.5rem;
-    }
-
-    h1 {
-      font-size: 2rem; font-weight: 800;
-      background: linear-gradient(135deg, #f1f5f9 30%, #94a3b8);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text; line-height: 1.1;
-    }
-
-    .datum { color: var(--muted); font-size: 0.82rem; margin-top: 0.5rem; }
-
-    /* ── Glass card ── */
-    .card {
-      background: var(--surface);
-      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-      border: 1px solid var(--border); border-radius: 24px;
-      padding: 2rem; width: 100%;
-      display: flex; flex-direction: column; gap: 2rem;
-      box-shadow: 0 8px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
-    }
-
-    .section-label {
-      font-size: 0.7rem; font-weight: 700;
-      letter-spacing: 0.15em; text-transform: uppercase;
-      color: var(--muted); margin-bottom: 1rem;
-      display: flex; align-items: center; gap: 0.5rem;
-    }
-    .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-
-    /* ── Steps ── */
-    .steps-display { text-align: center; margin-bottom: 1.2rem; }
-
-    .steps-number {
-      font-size: 3.5rem; font-weight: 800; line-height: 1;
-      background: linear-gradient(135deg, var(--amber), #fbbf24);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text; letter-spacing: -0.02em;
-    }
-
-    .steps-unit { font-size: 0.8rem; color: var(--muted); font-weight: 500; margin-top: 0.2rem; }
-
-    .steps-controls {
-      display: grid; grid-template-columns: 1fr 1fr 1fr 1fr;
-      gap: 0.5rem; margin-bottom: 1.2rem;
-    }
-
-    .step-pill {
-      background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2);
-      color: var(--amber); font-size: 0.78rem; font-weight: 600;
-      padding: 0.55rem 0; border-radius: 100px; cursor: pointer;
-      transition: all 0.15s; letter-spacing: 0.02em; font-family: inherit;
-    }
-    .step-pill:hover { background: rgba(245,158,11,0.18); border-color: rgba(245,158,11,0.5); transform: translateY(-1px); }
-    .step-pill:active { transform: translateY(0); }
-
-    input[type="number"].steps-raw {
-      width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--border);
-      border-radius: 12px; color: #fff; font-size: 1rem; font-weight: 600;
-      font-family: inherit; padding: 0.7rem 1rem; outline: none;
-      -moz-appearance: textfield; text-align: center; transition: border-color 0.2s;
-    }
-    input[type="number"].steps-raw::-webkit-inner-spin-button,
-    input[type="number"].steps-raw::-webkit-outer-spin-button { -webkit-appearance: none; }
-    input[type="number"].steps-raw:focus { border-color: var(--amber); box-shadow: 0 0 0 3px var(--amber-glow); }
-
-    .ring-wrap { display: flex; align-items: center; gap: 1.2rem; margin-top: 1rem; }
-    .ring-wrap svg { flex-shrink: 0; }
-    .ring-track { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 5; }
-    .ring-fill {
-      fill: none; stroke-width: 5; stroke-linecap: round;
-      stroke: url(#amberGrad);
-      transition: stroke-dashoffset 0.5s cubic-bezier(0.4,0,0.2,1);
-    }
-    .ring-info { flex: 1; }
-    .ring-pct { font-size: 1.4rem; font-weight: 800; color: var(--amber); }
-    .ring-label { font-size: 0.75rem; color: var(--muted); margin-top: 0.1rem; }
-    .ring-goal { font-size: 0.7rem; color: var(--muted); margin-top: 0.5rem; }
-    .ring-goal strong { color: var(--text); }
-
-    /* ── Sleep ── */
-    .sleep-value-row { display: flex; align-items: baseline; gap: 0.4rem; margin-bottom: 1rem; }
-    .sleep-big { font-size: 3rem; font-weight: 800; color: var(--violet); line-height: 1; }
-    .sleep-unit { font-size: 1rem; color: var(--muted); font-weight: 500; }
-
-    .sleep-status {
-      display: inline-block; font-size: 0.72rem; font-weight: 600;
-      padding: 0.25rem 0.7rem; border-radius: 100px; margin-bottom: 1rem;
-      background: rgba(167,139,250,0.12); color: var(--violet);
-      border: 1px solid rgba(167,139,250,0.25);
-    }
-
-    input[type="range"].sleep-range {
-      -webkit-appearance: none; width: 100%; height: 6px; border-radius: 3px;
-      background: rgba(167,139,250,0.15); outline: none; cursor: pointer;
-    }
-    input[type="range"].sleep-range::-webkit-slider-thumb {
-      -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
-      background: linear-gradient(135deg, #a78bfa, #7c3aed); cursor: pointer;
-      box-shadow: 0 0 0 3px rgba(167,139,250,0.2), 0 2px 8px rgba(167,139,250,0.4);
-      transition: box-shadow 0.15s;
-    }
-    input[type="range"].sleep-range::-webkit-slider-thumb:hover {
-      box-shadow: 0 0 0 5px rgba(167,139,250,0.3), 0 2px 12px rgba(167,139,250,0.5);
-    }
-
-    .sleep-ticks { display: flex; justify-content: space-between; margin-top: 0.5rem; padding: 0 2px; }
-    .sleep-ticks span { font-size: 0.65rem; color: var(--muted); }
-
-    /* ── Mood ── */
-    .mood-grid { display: flex; gap: 0.5rem; }
-
-    .mood-btn {
-      flex: 1; background: rgba(255,255,255,0.03);
-      border: 1.5px solid var(--border); border-radius: 16px;
-      padding: 0.9rem 0.2rem 0.7rem; cursor: pointer;
-      display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
-      transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
-      position: relative; overflow: hidden;
-    }
-    .mood-btn::before {
-      content: ''; position: absolute; inset: 0;
-      background: var(--c); opacity: 0; transition: opacity 0.2s;
-    }
-    .mood-btn:hover { border-color: var(--border-hover); transform: translateY(-2px); }
-    .mood-btn.selected {
-      border-color: var(--c); transform: translateY(-3px);
-      box-shadow: 0 8px 20px color-mix(in srgb, var(--c) 25%, transparent);
-    }
-    .mood-btn.selected::before { opacity: 0.1; }
-    .mood-emoji { font-size: 1.8rem; line-height: 1; position: relative; transition: transform 0.2s; }
-    .mood-btn:hover .mood-emoji, .mood-btn.selected .mood-emoji { transform: scale(1.15); }
-    .mood-name { font-size: 0.6rem; font-weight: 600; letter-spacing: 0.05em; color: var(--muted); position: relative; transition: color 0.2s; }
-    .mood-btn.selected .mood-name { color: var(--c); }
-
-    /* ── Save ── */
-    .save-btn {
-      position: relative; width: 100%; padding: 1rem; border: none;
-      border-radius: 16px; font-family: inherit; font-size: 0.95rem;
-      font-weight: 700; letter-spacing: 0.04em; color: #fff; cursor: pointer;
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #38bdf8 100%);
-      background-size: 200% 200%; background-position: 0% 50%;
-      transition: all 0.3s ease; box-shadow: 0 4px 20px rgba(99,102,241,0.35);
-      overflow: hidden;
-    }
-    .save-btn::after {
-      content: ''; position: absolute; inset: 0;
-      background: linear-gradient(135deg, transparent, rgba(255,255,255,0.1), transparent);
-      transform: translateX(-100%); transition: transform 0.5s ease;
-    }
-    .save-btn:hover { background-position: 100% 50%; box-shadow: 0 6px 30px rgba(99,102,241,0.5); transform: translateY(-1px); }
-    .save-btn:hover::after { transform: translateX(100%); }
-    .save-btn:active { transform: translateY(0); }
-
-    /* ── Toast ── */
-    .toast {
-      position: fixed; bottom: 2.5rem; left: 50%;
-      transform: translateX(-50%) translateY(5rem);
-      color: #fff; font-weight: 600; font-size: 0.85rem;
-      padding: 0.75rem 2rem; border-radius: 100px;
-      box-shadow: 0 4px 20px rgba(34,197,94,0.35);
-      transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
-      pointer-events: none; z-index: 99; white-space: nowrap;
-    }
-    .toast.show { transform: translateX(-50%) translateY(0); }
-
-    /* ── Tabs ── */
-    .tabs-wrap { width: 100%; margin-top: 2.5rem; }
-
-    .tab-bar {
-      display: flex; gap: 0.4rem;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 14px; padding: 0.3rem; margin-bottom: 1.2rem;
-    }
-
-    .tab-btn {
-      flex: 1; padding: 0.55rem 0.5rem;
-      background: none; border: none; border-radius: 10px;
-      font-family: inherit; font-size: 0.8rem; font-weight: 600;
-      color: var(--muted); cursor: pointer;
-      transition: all 0.2s;
-    }
-    .tab-btn.active { background: rgba(255,255,255,0.08); color: var(--text); }
-    .tab-btn:hover:not(.active) { color: #94a3b8; }
-
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
-
-    /* ── Charts ── */
-    .chart-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 20px; padding: 1.4rem 1.4rem 1rem;
-      margin-bottom: 0.8rem;
-    }
-
-    .chart-header {
-      display: flex; align-items: baseline;
-      justify-content: space-between; margin-bottom: 1rem;
-    }
-
-    .chart-title {
-      font-size: 0.72rem; font-weight: 700;
-      letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
-    }
-
-    .chart-avg {
-      font-size: 0.72rem; font-weight: 600; color: var(--muted);
-    }
-
-    .chart-avg span { font-weight: 700; }
-
-    .chart-wrap { position: relative; height: 130px; }
-
-    /* ── History ── */
-    .data-toolbar {
-      display: flex; gap: 0.5rem; width: 100%; margin-bottom: 1rem;
-    }
-
-    .toolbar-btn {
-      flex: 1; display: flex; align-items: center; justify-content: center;
-      gap: 0.4rem; padding: 0.6rem 0.8rem;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 12px; color: var(--muted);
-      font-family: inherit; font-size: 0.75rem; font-weight: 600;
-      cursor: pointer; transition: all 0.15s; white-space: nowrap;
-    }
-    .toolbar-btn:hover { border-color: var(--border-hover); color: var(--text); transform: translateY(-1px); }
-    .toolbar-btn.export:hover { border-color: rgba(56,189,248,0.4); color: var(--blue); }
-    .toolbar-btn.import:hover { border-color: rgba(167,139,250,0.4); color: var(--violet); }
-    #importInput { display: none; }
-
-    .history { width: 100%; display: flex; flex-direction: column; gap: 0.6rem; }
-
-    .history-item {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 18px; padding: 1.1rem 1.3rem;
-      display: flex; align-items: center; gap: 1rem;
-      transition: border-color 0.2s, transform 0.15s;
-      animation: slideIn 0.3s ease;
-    }
-
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    .history-item:hover { border-color: var(--border-hover); transform: translateX(2px); }
-
-    .hi-date { flex: 1; }
-    .hi-day { font-size: 0.88rem; font-weight: 600; color: var(--text); text-transform: capitalize; }
-    .hi-date-sub { font-size: 0.7rem; color: var(--muted); margin-top: 0.1rem; }
-
-    .hi-stats { display: flex; gap: 1.2rem; align-items: center; }
-
-    .hi-stat { display: flex; flex-direction: column; align-items: center; gap: 0.1rem; }
-    .hi-val { font-size: 0.88rem; font-weight: 700; line-height: 1; }
-    .hi-lbl { font-size: 0.58rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
-    .hi-steps .hi-val { color: var(--amber); }
-    .hi-sleep .hi-val { color: var(--violet); }
-    .hi-mood .hi-val { font-size: 1.3rem; }
-
-    .hi-divider { width: 1px; height: 28px; background: var(--border); }
-
-    .hi-del {
-      background: none; border: none; color: var(--muted); cursor: pointer;
-      font-size: 0.9rem; width: 28px; height: 28px; border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      transition: all 0.15s; flex-shrink: 0;
-    }
-    .hi-del:hover { background: rgba(239,68,68,0.12); color: #ef4444; }
-
-    .hist-header-row {
+    /* ── HEADER ── */
+    .app-header {
       display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 1rem;
+      padding: 54px 20px 12px;
+      position: sticky; top: 0; z-index: 10;
+      background: linear-gradient(to bottom, var(--bg) 70%, transparent);
     }
-    .hist-title { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
-    .hist-count { font-size: 0.7rem; color: var(--muted); background: var(--surface); border: 1px solid var(--border); padding: 0.15rem 0.6rem; border-radius: 100px; }
+    .header-date { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3); margin-bottom: 2px; }
+    .header-title { font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg,#F1F5F9,#94A3B8); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .streak-pill { display:flex; align-items:center; gap:4px; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.25); border-radius:100px; padding:6px 12px; font-size:0.82rem; font-weight:700; color:var(--amber); white-space:nowrap; }
 
-    .empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--muted); }
-    .empty-icon { font-size: 2.5rem; margin-bottom: 0.8rem; }
-    .empty-text { font-size: 0.85rem; line-height: 1.5; }
+    /* ── PANELS ── */
+    .panel { display:none; padding:0 20px calc(var(--nav-h) + var(--safe-b) + 24px); }
+    .panel.active { display:block; }
+
+    /* ── BOTTOM NAV ── */
+    .bottom-nav { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:430px; display:flex; background:rgba(7,11,20,0.9); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); border-top:1px solid var(--border); padding-bottom:var(--safe-b); z-index:100; }
+    .nav-btn { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; padding:10px 0 12px; background:none; border:none; color:var(--text-3); font-family:inherit; cursor:pointer; transition:color 0.2s; }
+    .nav-btn.active { color:var(--violet-l); }
+    .nav-icon { font-size:1.25rem; line-height:1; }
+    .nav-label { font-size:0.63rem; font-weight:600; letter-spacing:0.03em; }
+
+    /* ── SCORE RING ── */
+    .score-section { display:flex; flex-direction:column; align-items:center; padding:4px 0 20px; }
+    .ring-wrap { position:relative; width:196px; height:196px; }
+    .ring-wrap svg { transform:rotate(-90deg); }
+    .ring-track { fill:none; stroke:rgba(255,255,255,0.06); stroke-width:11; }
+    .ring-fill { fill:none; stroke-width:11; stroke-linecap:round; stroke:url(#ringGrad); stroke-dasharray:502.65; stroke-dashoffset:502.65; transition:stroke-dashoffset 1s cubic-bezier(0.4,0,0.2,1); filter:drop-shadow(0 0 8px rgba(139,92,246,0.5)); }
+    .score-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    .score-num { font-size:3.2rem; font-weight:900; line-height:1; background:linear-gradient(135deg,#F1F5F9,#94A3B8); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .score-denom { font-size:0.75rem; color:var(--text-3); font-weight:500; }
+    .score-grade { font-size:0.72rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; margin-top:3px; }
+    .score-lbl { margin-top:10px; font-size:0.68rem; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:var(--text-3); }
+
+    /* ── METRIC CARDS ── */
+    .metrics { display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
+    .mcard { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:16px; }
+    .mcard-top { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+    .micon { width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; }
+    .minfo { flex:1; }
+    .mname { font-size:0.88rem; font-weight:700; display:block; }
+    .mhint { font-size:0.7rem; color:var(--text-3); }
+    .mval { font-size:1.55rem; font-weight:800; line-height:1; }
+
+    input[type="range"].sl { -webkit-appearance:none; width:100%; height:5px; border-radius:3px; background:rgba(255,255,255,0.07); outline:none; cursor:pointer; }
+    input[type="range"].sl::-webkit-slider-thumb { -webkit-appearance:none; width:22px; height:22px; border-radius:50%; background:var(--tc,var(--violet)); border:2px solid var(--bg); box-shadow:0 0 0 3px color-mix(in srgb,var(--tc,var(--violet)) 25%,transparent); cursor:pointer; transition:transform 0.1s; }
+    input[type="range"].sl:active::-webkit-slider-thumb { transform:scale(1.2); }
+    .sl-labels { display:flex; justify-content:space-between; margin-top:5px; }
+    .sl-labels span { font-size:0.63rem; color:var(--text-3); }
+
+    .step-pills { display:flex; gap:6px; margin-bottom:8px; }
+    .step-pill { flex:1; padding:6px 0; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.2); border-radius:100px; font-family:inherit; font-size:0.72rem; font-weight:600; color:var(--amber); cursor:pointer; transition:background 0.15s; }
+    .step-pill:hover { background:rgba(245,158,11,0.18); }
+    .step-input { width:100%; background:rgba(0,0,0,0.3); border:1px solid var(--border); border-radius:12px; color:var(--text); font-family:inherit; font-size:1rem; font-weight:600; padding:9px 12px; text-align:center; outline:none; -moz-appearance:textfield; transition:border-color 0.2s; margin-bottom:8px; }
+    .step-input::-webkit-inner-spin-button,.step-input::-webkit-outer-spin-button { -webkit-appearance:none; }
+    .step-input:focus { border-color:var(--amber); }
+    .step-bar { height:4px; background:rgba(245,158,11,0.1); border-radius:2px; overflow:hidden; }
+    .step-bar-fill { height:100%; background:linear-gradient(90deg,var(--amber),#FCD34D); border-radius:2px; width:0%; transition:width 0.4s ease; }
+
+    textarea.note { width:100%; background:rgba(0,0,0,0.25); border:1px solid var(--border); border-radius:14px; color:var(--text); font-family:inherit; font-size:0.88rem; line-height:1.5; padding:11px 13px; resize:none; height:88px; outline:none; transition:border-color 0.2s; }
+    textarea.note::placeholder { color:var(--text-3); }
+    textarea.note:focus { border-color:var(--border-2); }
+
+    .save-btn { width:100%; padding:15px; background:linear-gradient(135deg,#6366F1 0%,#8B5CF6 50%,#38BDF8 100%); background-size:200% 200%; background-position:0% 50%; border:none; border-radius:16px; color:#fff; font-family:inherit; font-size:1rem; font-weight:700; letter-spacing:0.04em; cursor:pointer; transition:all 0.3s ease; box-shadow:0 4px 24px rgba(99,102,241,0.4); margin-bottom:6px; }
+    .save-btn:hover { background-position:100% 50%; box-shadow:0 8px 32px rgba(99,102,241,0.5); transform:translateY(-1px); }
+    .save-btn:active { transform:translateY(0); }
+
+    /* ── SECTION HEADER ── */
+    .sec-hdr { display:flex; align-items:center; justify-content:space-between; margin:20px 0 10px; }
+    .sec-title { font-size:0.68rem; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:var(--text-3); }
+
+    /* ── DASHBOARD ── */
+    .stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+    .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px; }
+    .stat-lbl { font-size:0.63rem; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-3); margin-bottom:3px; }
+    .stat-val { font-size:1.4rem; font-weight:800; line-height:1; }
+    .stat-sub { font-size:0.68rem; color:var(--text-3); margin-top:2px; }
+
+    .chart-card { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:16px; margin-bottom:10px; }
+    .chart-hdr { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px; }
+    .chart-title { font-size:0.82rem; font-weight:700; }
+    .chart-sub { font-size:0.7rem; color:var(--text-3); }
+    .chart-sub span { font-weight:700; }
+    .chart-wrap { position:relative; height:110px; }
+
+    .insight-card { display:flex; gap:12px; align-items:flex-start; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:13px 15px; margin-bottom:8px; animation:fadeUp 0.35s ease; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+    .insight-ico { width:34px; height:34px; border-radius:10px; background:rgba(139,92,246,0.1); display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; }
+    .insight-txt { font-size:0.82rem; line-height:1.5; color:var(--text-2); }
+    .insight-txt strong { color:var(--text); }
+
+    .badges-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:16px; }
+    .badge-item { display:flex; flex-direction:column; align-items:center; gap:5px; }
+    .badge-ico { width:52px; height:52px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.35rem; }
+    .badge-ico.on { background:linear-gradient(135deg,rgba(139,92,246,0.2),rgba(56,189,248,0.2)); border:1.5px solid rgba(139,92,246,0.45); box-shadow:0 0 14px rgba(139,92,246,0.2); }
+    .badge-ico.off { background:rgba(255,255,255,0.04); border:1.5px solid var(--border); filter:grayscale(1); opacity:0.35; }
+    .badge-lbl { font-size:0.57rem; font-weight:600; color:var(--text-3); text-align:center; line-height:1.25; }
+
+    /* ── HISTORY ── */
+    .hist-list { display:flex; flex-direction:column; gap:8px; }
+    .hist-card { background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:13px 15px; transition:border-color 0.2s; }
+    .hist-card:hover { border-color:var(--border-2); }
+    .hist-top { display:flex; align-items:center; justify-content:space-between; }
+    .hist-day { font-size:0.88rem; font-weight:600; text-transform:capitalize; }
+    .hist-date-sub { font-size:0.68rem; color:var(--text-3); margin-top:1px; }
+    .hist-score { padding:4px 10px; border-radius:100px; font-size:0.78rem; font-weight:700; }
+    .hist-metrics { display:flex; gap:14px; margin-top:10px; padding-top:10px; border-top:1px solid var(--border); flex-wrap:wrap; }
+    .hm { display:flex; flex-direction:column; gap:1px; }
+    .hm-v { font-size:0.82rem; font-weight:700; }
+    .hm-l { font-size:0.58rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-3); }
+    .hist-note { margin-top:8px; font-size:0.75rem; color:var(--text-3); font-style:italic; line-height:1.4; }
+    .hist-actions { display:flex; gap:7px; margin-top:10px; }
+    .hist-btn { padding:5px 10px; border-radius:8px; font-family:inherit; font-size:0.7rem; font-weight:600; cursor:pointer; transition:all 0.15s; background:rgba(139,92,246,0.08); border:1px solid rgba(139,92,246,0.22); color:var(--violet-l); }
+    .hist-btn:hover { background:rgba(139,92,246,0.16); }
+    .hist-btn.del { background:rgba(239,68,68,0.08); border-color:rgba(239,68,68,0.22); color:var(--red); }
+    .hist-btn.del:hover { background:rgba(239,68,68,0.16); }
+
+    .data-row { display:flex; gap:8px; margin-top:14px; }
+    .data-btn { flex:1; padding:10px; background:var(--surface); border:1px solid var(--border); border-radius:12px; color:var(--text-3); font-family:inherit; font-size:0.75rem; font-weight:600; cursor:pointer; transition:all 0.15s; }
+    .data-btn:hover { border-color:var(--border-2); color:var(--text); }
+
+    /* ── MODAL SHEET ── */
+    .overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.72); z-index:200; backdrop-filter:blur(4px); }
+    .overlay.open { display:flex; align-items:flex-end; justify-content:center; }
+    .sheet { width:100%; max-width:430px; background:#0C1118; border-radius:24px 24px 0 0; border-top:1px solid var(--border); padding:0 20px calc(var(--safe-b) + 16px); max-height:90dvh; overflow-y:auto; animation:slideUp 0.32s cubic-bezier(0.34,1.56,0.64,1); }
+    @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+    .sheet-handle { width:38px; height:4px; background:var(--border-2); border-radius:2px; margin:11px auto 18px; }
+    .sheet-title { font-size:1.05rem; font-weight:700; margin-bottom:18px; }
+    .sheet-save { width:100%; padding:13px; background:linear-gradient(135deg,#6366F1,#8B5CF6); border:none; border-radius:14px; color:#fff; font-family:inherit; font-size:0.92rem; font-weight:700; cursor:pointer; margin-top:14px; }
+    .sheet-cancel { width:100%; padding:11px; background:none; border:none; color:var(--text-3); font-family:inherit; font-size:0.85rem; font-weight:600; cursor:pointer; margin-top:4px; }
+
+    /* ── TOAST ── */
+    .toast { position:fixed; bottom:calc(var(--nav-h) + var(--safe-b) + 10px); left:50%; transform:translateX(-50%) translateY(16px); background:rgba(12,17,24,0.96); backdrop-filter:blur(16px); border:1px solid var(--border-2); color:var(--text); font-size:0.83rem; font-weight:600; padding:9px 18px; border-radius:100px; opacity:0; transition:all 0.32s cubic-bezier(0.34,1.56,0.64,1); pointer-events:none; z-index:300; white-space:nowrap; }
+    .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+    .empty { text-align:center; padding:40px 20px; color:var(--text-3); }
+    .empty-ico { font-size:2.4rem; margin-bottom:10px; }
+    .empty-ttl { font-size:0.92rem; font-weight:600; color:var(--text-2); margin-bottom:5px; }
+    .empty-txt { font-size:0.8rem; line-height:1.5; }
+    #importInput { display:none; }
+
+    /* ── SCORE BREAKDOWN ── */
+    .breakdown-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+    .breakdown-lbl { font-size:0.72rem; color:var(--text-2); width:80px; flex-shrink:0; }
+    .breakdown-bar-wrap { flex:1; height:6px; background:rgba(255,255,255,0.07); border-radius:3px; overflow:hidden; }
+    .breakdown-bar { height:100%; border-radius:3px; transition:width 0.6s cubic-bezier(0.4,0,0.2,1); }
+    .breakdown-pts { font-size:0.72rem; font-weight:700; width:38px; text-align:right; flex-shrink:0; }
   </style>
 </head>
 <body>
-<div class="page">
+<div id="app">
 
-  <header>
-    <p class="tagline">Dagelijks overzicht</p>
-    <h1>Mijn dagboek</h1>
-    <p class="datum" id="datum"></p>
+  <header class="app-header">
+    <div>
+      <p class="header-date" id="headerDate"></p>
+      <h1 class="header-title">Dopamine Coach</h1>
+    </div>
+    <div class="streak-pill">🔥 <span id="streakNum">0</span> dagen</div>
   </header>
 
-  <div class="card">
-    <!-- STAPPEN -->
-    <div>
-      <p class="section-label">🏃 Stappen</p>
-      <div class="steps-display">
-        <div class="steps-number" id="stepsDisplay">0</div>
-        <div class="steps-unit">stappen vandaag</div>
-      </div>
-      <div class="steps-controls">
-        <button class="step-pill" onclick="changeSteps(500)">+500</button>
-        <button class="step-pill" onclick="changeSteps(1000)">+1 000</button>
-        <button class="step-pill" onclick="changeSteps(2500)">+2 500</button>
-        <button class="step-pill" onclick="changeSteps(5000)">+5 000</button>
-      </div>
-      <input type="number" class="steps-raw" id="stappen" value="0" min="0" max="99999"
-        placeholder="Of typ hier een getal" oninput="updateSteps()">
+  <!-- VANDAAG -->
+  <section class="panel active" id="panel-vandaag">
+    <div class="score-section">
       <div class="ring-wrap">
-        <svg width="56" height="56" viewBox="0 0 56 56">
+        <svg width="196" height="196" viewBox="0 0 196 196">
           <defs>
-            <linearGradient id="amberGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" style="stop-color:#f59e0b"/>
-              <stop offset="100%" style="stop-color:#fbbf24"/>
+            <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#6366F1"/>
+              <stop offset="50%" style="stop-color:#8B5CF6"/>
+              <stop offset="100%" style="stop-color:#38BDF8"/>
             </linearGradient>
           </defs>
-          <circle class="ring-track" cx="28" cy="28" r="23"/>
-          <circle class="ring-fill" id="ringFill" cx="28" cy="28" r="23"
-            stroke-dasharray="144.5" stroke-dashoffset="144.5"
-            transform="rotate(-90 28 28)"/>
+          <circle class="ring-track" cx="98" cy="98" r="80"/>
+          <circle class="ring-fill" id="ringFill" cx="98" cy="98" r="80"/>
         </svg>
-        <div class="ring-info">
-          <div class="ring-pct" id="ringPct">0%</div>
-          <div class="ring-label" id="stepsStatus">Nog niet gestart</div>
-          <div class="ring-goal">Doel: <strong>10 000 stappen</strong></div>
+        <div class="score-center">
+          <span class="score-num" id="scoreNum">—</span>
+          <span class="score-denom">/100</span>
+          <span class="score-grade" id="scoreGrade"></span>
         </div>
       </div>
+      <p class="score-lbl">Dopamine Baseline Score</p>
     </div>
 
-    <!-- SLAAP -->
-    <div>
-      <p class="section-label">🌙 Slaap</p>
-      <div class="sleep-value-row">
-        <span class="sleep-big" id="slaapBig">7</span>
-        <span class="sleep-unit">uur</span>
-      </div>
-      <div class="sleep-status" id="slaapStatus">Goed geslapen 👍</div>
-      <input type="range" class="sleep-range" min="0" max="12" step="0.5" value="7"
-        id="slaap" oninput="updateSlaap()">
-      <div class="sleep-ticks">
-        <span>0u</span><span>3u</span><span>6u</span><span>9u</span><span>12u</span>
-      </div>
-    </div>
-
-    <!-- HUMEUR -->
-    <div>
-      <p class="section-label">💬 Humeur</p>
-      <div class="mood-grid">
-        <button class="mood-btn" style="--c:#ef4444" onclick="selectMood(1,this)">
-          <span class="mood-emoji">😣</span><span class="mood-name">Slecht</span>
-        </button>
-        <button class="mood-btn" style="--c:#f97316" onclick="selectMood(2,this)">
-          <span class="mood-emoji">😕</span><span class="mood-name">Matig</span>
-        </button>
-        <button class="mood-btn" style="--c:#eab308" onclick="selectMood(3,this)">
-          <span class="mood-emoji">😐</span><span class="mood-name">Oké</span>
-        </button>
-        <button class="mood-btn" style="--c:#22c55e" onclick="selectMood(4,this)">
-          <span class="mood-emoji">🙂</span><span class="mood-name">Goed</span>
-        </button>
-        <button class="mood-btn" style="--c:#38bdf8" onclick="selectMood(5,this)">
-          <span class="mood-emoji">😄</span><span class="mood-name">Super</span>
-        </button>
-      </div>
-    </div>
-
-    <button class="save-btn" onclick="save()">Dag opslaan</button>
-  </div>
-
-  <!-- ── Tabs ── -->
-  <div class="tabs-wrap">
-    <div class="tab-bar">
-      <button class="tab-btn active" onclick="switchTab('grafieken',this)">📊 Grafieken</button>
-      <button class="tab-btn" onclick="switchTab('geschiedenis',this)">📋 Geschiedenis</button>
-    </div>
-
-    <!-- GRAFIEKEN -->
-    <div class="tab-panel active" id="tab-grafieken">
-
-      <div class="chart-card">
-        <div class="chart-header">
-          <span class="chart-title">🏃 Stappen</span>
-          <span class="chart-avg" id="avgStappen">gem. <span>—</span></span>
+    <div class="metrics">
+      <div class="mcard">
+        <div class="mcard-top">
+          <div class="micon" style="background:rgba(248,113,113,0.12)">😊</div>
+          <div class="minfo"><span class="mname">Stemming</span><span class="mhint">Hoe voel je je vandaag?</span></div>
+          <span class="mval" style="color:#F87171" id="v-stemming">7</span>
         </div>
-        <div class="chart-wrap"><canvas id="chartStappen"></canvas></div>
+        <input type="range" class="sl" min="1" max="10" value="7" id="stemming" style="--tc:#EF4444" oninput="onSl('stemming',this.value)">
+        <div class="sl-labels"><span>😣 Slecht</span><span>Uitstekend 😄</span></div>
       </div>
 
-      <div class="chart-card">
-        <div class="chart-header">
-          <span class="chart-title">🌙 Slaap</span>
-          <span class="chart-avg" id="avgSlaap">gem. <span>—</span></span>
+      <div class="mcard">
+        <div class="mcard-top">
+          <div class="micon" style="background:rgba(245,158,11,0.12)">⚡</div>
+          <div class="minfo"><span class="mname">Energie</span><span class="mhint">Hoe energiek ben je?</span></div>
+          <span class="mval" style="color:#FCD34D" id="v-energie">7</span>
         </div>
-        <div class="chart-wrap"><canvas id="chartSlaap"></canvas></div>
+        <input type="range" class="sl" min="1" max="10" value="7" id="energie" style="--tc:#F59E0B" oninput="onSl('energie',this.value)">
+        <div class="sl-labels"><span>Uitgeput</span><span>Vol energie</span></div>
       </div>
 
-      <div class="chart-card">
-        <div class="chart-header">
-          <span class="chart-title">💬 Humeur</span>
-          <span class="chart-avg" id="avgHumeur">gem. <span>—</span></span>
+      <div class="mcard">
+        <div class="mcard-top">
+          <div class="micon" style="background:rgba(167,139,250,0.12)">🌙</div>
+          <div class="minfo"><span class="mname">Slaap</span><span class="mhint">Hoeveel uur geslapen?</span></div>
+          <span class="mval" style="color:#A78BFA" id="v-slaap">7u</span>
         </div>
-        <div class="chart-wrap"><canvas id="chartHumeur"></canvas></div>
+        <input type="range" class="sl" min="0" max="12" step="0.5" value="7" id="slaap" style="--tc:#8B5CF6" oninput="onSl('slaap',this.value,'u')">
+        <div class="sl-labels"><span>0u</span><span>12u</span></div>
       </div>
 
+      <div class="mcard">
+        <div class="mcard-top">
+          <div class="micon" style="background:rgba(245,158,11,0.12)">🏃</div>
+          <div class="minfo"><span class="mname">Stappen</span><span class="mhint">Stappen vandaag</span></div>
+          <span class="mval" style="color:#FCD34D" id="v-stappen">0</span>
+        </div>
+        <div class="step-pills">
+          <button class="step-pill" onclick="addSteps(1000)">+1k</button>
+          <button class="step-pill" onclick="addSteps(2500)">+2.5k</button>
+          <button class="step-pill" onclick="addSteps(5000)">+5k</button>
+          <button class="step-pill" onclick="addSteps(10000)">+10k</button>
+        </div>
+        <input type="number" class="step-input" id="stappen" value="0" min="0" max="99999" placeholder="Of typ hier..." oninput="onSteps(this.value)">
+        <div class="step-bar"><div class="step-bar-fill" id="stepFill"></div></div>
+      </div>
+
+      <div class="mcard">
+        <div class="mcard-top">
+          <div class="micon" style="background:rgba(56,189,248,0.12)">🎯</div>
+          <div class="minfo"><span class="mname">Focus</span><span class="mhint">Uren diep werk vandaag</span></div>
+          <span class="mval" style="color:#38BDF8" id="v-focus">2u</span>
+        </div>
+        <input type="range" class="sl" min="0" max="8" step="0.5" value="2" id="focus" style="--tc:#38BDF8" oninput="onSl('focus',this.value,'u')">
+        <div class="sl-labels"><span>0u</span><span>8u</span></div>
+      </div>
+
+      <div class="mcard">
+        <div class="mcard-top">
+          <div class="micon" style="background:rgba(16,185,129,0.12)">☀️</div>
+          <div class="minfo"><span class="mname">Tijd buiten</span><span class="mhint">Minuten in buitenlucht</span></div>
+          <span class="mval" style="color:#34D399" id="v-buiten">30min</span>
+        </div>
+        <input type="range" class="sl" min="0" max="180" step="5" value="30" id="buiten" style="--tc:#10B981" oninput="onSl('buiten',this.value,'min')">
+        <div class="sl-labels"><span>0</span><span>3u</span></div>
+      </div>
+
+      <div class="mcard">
+        <div class="mcard-top">
+          <div class="micon" style="background:rgba(255,255,255,0.05)">✍️</div>
+          <div class="minfo"><span class="mname">Reflectie</span><span class="mhint">Optionele notitie</span></div>
+        </div>
+        <textarea class="note" id="notitie" placeholder="Hoe was je dag? Wat viel je op?"></textarea>
+      </div>
     </div>
 
-    <!-- GESCHIEDENIS -->
-    <div class="tab-panel" id="tab-geschiedenis">
-      <div class="hist-header-row">
-        <span class="hist-title">Alle dagen</span>
-        <span class="hist-count" id="histCount">0 dagen</span>
-      </div>
-      <div class="data-toolbar">
-        <button class="toolbar-btn export" onclick="exportData()">↓ Exporteer</button>
-        <button class="toolbar-btn import" onclick="document.getElementById('importInput').click()">↑ Importeer</button>
-        <input type="file" id="importInput" accept=".json" onchange="importData(this)">
-      </div>
-      <div class="history" id="history"></div>
+    <button class="save-btn" onclick="saveDay()">Dag opslaan</button>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section class="panel" id="panel-dashboard">
+    <div class="sec-hdr" style="margin-top:8px"><span class="sec-title">Afgelopen 7 dagen</span></div>
+    <div class="stats-grid">
+      <div class="stat-card"><p class="stat-lbl">Gem. Score</p><p class="stat-val" style="color:var(--violet-l)" id="d-avgScore">—</p><p class="stat-sub">/ 100</p></div>
+      <div class="stat-card"><p class="stat-lbl">Streak</p><p class="stat-val" style="color:var(--amber)" id="d-streak">0</p><p class="stat-sub">dagen op rij</p></div>
+      <div class="stat-card"><p class="stat-lbl">Gem. Slaap</p><p class="stat-val" style="color:var(--violet-l)" id="d-slaap">—</p><p class="stat-sub">uur</p></div>
+      <div class="stat-card"><p class="stat-lbl">Gem. Stappen</p><p class="stat-val" style="color:var(--amber)" id="d-stappen">—</p><p class="stat-sub">/ dag</p></div>
     </div>
-  </div>
+    <div class="chart-card" id="breakdownCard" style="display:none">
+      <div class="chart-hdr"><span class="chart-title">📊 Score opbouw</span><span class="chart-sub" id="breakdownLbl">laatste log</span></div>
+      <div id="scoreBreakdown"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-hdr"><span class="chart-title">Dopamine Score</span><span class="chart-sub">30 dagen · gem. <span id="c-avgScore">—</span></span></div>
+      <div class="chart-wrap" style="height:130px"><canvas id="cScore"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-hdr"><span class="chart-title">🏃 Stappen</span><span class="chart-sub">doel <span style="color:var(--amber)">10k</span></span></div>
+      <div class="chart-wrap"><canvas id="cStappen"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-hdr"><span class="chart-title">🌙 Slaap & 😊 Stemming</span></div>
+      <div class="chart-wrap"><canvas id="cSlaapMood"></canvas></div>
+    </div>
+    <div class="sec-hdr"><span class="sec-title">Inzichten</span></div>
+    <div id="insightsWrap"></div>
+    <div class="sec-hdr"><span class="sec-title">Badges</span></div>
+    <div class="badges-grid" id="badgesWrap"></div>
+  </section>
+
+  <!-- HISTORIEK -->
+  <section class="panel" id="panel-historiek">
+    <div class="sec-hdr" style="margin-top:8px"><span class="sec-title" id="histTitle">Alle dagen</span></div>
+    <div class="hist-list" id="histList"></div>
+    <div class="data-row">
+      <button class="data-btn" onclick="exportData()">↓ Exporteer</button>
+      <button class="data-btn" onclick="document.getElementById('importInput').click()">↑ Importeer</button>
+      <input type="file" id="importInput" accept=".json" onchange="importData(this)">
+    </div>
+  </section>
 
 </div>
 
-<div class="toast" id="toast">Dag opgeslagen ✓</div>
+<nav class="bottom-nav">
+  <button class="nav-btn active" onclick="switchTab('vandaag',this)"><span class="nav-icon">☀️</span><span class="nav-label">Vandaag</span></button>
+  <button class="nav-btn" onclick="switchTab('dashboard',this)"><span class="nav-icon">📊</span><span class="nav-label">Dashboard</span></button>
+  <button class="nav-btn" onclick="switchTab('historiek',this)"><span class="nav-icon">📋</span><span class="nav-label">Historiek</span></button>
+</nav>
+
+<div class="overlay" id="editOverlay" onclick="maybeClose(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <p class="sheet-title" id="sheetTitle"></p>
+    <div id="sheetBody"></div>
+    <button class="sheet-save" onclick="saveEdit()">Opslaan</button>
+    <button class="sheet-cancel" onclick="closeSheet()">Annuleren</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
 
 <script>
-  const GOAL = 10000;
-  const CIRC = 2 * Math.PI * 23;
-  const MOODS = ['','😣','😕','😐','🙂','😄'];
-  const MOOD_COLORS = ['','#ef4444','#f97316','#eab308','#22c55e','#38bdf8'];
-  let selectedMood = 0;
-  let charts = {};
+const GOAL=10000, CIRC=2*Math.PI*80;
+const BADGES_DEF=[
+  {id:'dag1',   ico:'🌱',lbl:'Eerste stap',   fn:(d,s)=>Object.keys(d).length>=1},
+  {id:'str7',   ico:'🔥',lbl:'7 dagen streak', fn:(d,s)=>s>=7},
+  {id:'str30',  ico:'💎',lbl:'30 dagen',       fn:(d,s)=>s>=30},
+  {id:'stap10k',ico:'👟',lbl:'10k stappen',   fn:(d)=>Object.values(d).some(e=>e.stappen>=10000)},
+  {id:'slaap8', ico:'😴',lbl:'Slaapkampioen', fn:(d)=>Object.values(d).some(e=>e.slaap>=8)},
+  {id:'focus4', ico:'🎯',lbl:'Focusfreak',    fn:(d)=>Object.values(d).some(e=>e.focus>=4)},
+  {id:'sc90',   ico:'⭐',lbl:'Perfecte dag',  fn:(d)=>Object.values(d).some(e=>(e.score||0)>=90)},
+  {id:'buiten', ico:'🌳',lbl:'Buitenmens',    fn:(d)=>Object.values(d).some(e=>e.buiten>=60)},
+];
 
-  // Chart.js global defaults
-  Chart.defaults.font.family = "'Inter', sans-serif";
-  Chart.defaults.color = '#64748b';
+let charts={}, editKey=null;
+const KEY='dopamine_coach';
+const getAll=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch{return{}}};
+const setAll=d=>localStorage.setItem(KEY,JSON.stringify(d));
+const todayStr=()=>new Date().toISOString().slice(0,10);
 
-  document.getElementById('datum').textContent = new Date().toLocaleDateString('nl-BE', {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+function calcScore(e){
+  let s=0;
+  s+=((e.stemming||5)/10)*20;
+  s+=((e.energie||5)/10)*20;
+  const sl=e.slaap||0;
+  s+=sl<4?0:sl<6?6:sl<7?13:sl<=9?20:14;
+  s+=Math.min((e.stappen||0)/GOAL,1)*15;
+  s+=Math.min((e.focus||0)/4,1)*15;
+  s+=Math.min((e.buiten||0)/60,1)*10;
+  return Math.round(Math.min(s,100));
+}
+
+function scoreColor(s){return s>=80?'#10B981':s>=60?'#F59E0B':s>=40?'#F97316':'#EF4444';}
+function scoreLabel(s){return s>=90?['Uitstekend','#10B981']:s>=75?['Goed','#34D399']:s>=60?['Gemiddeld','#F59E0B']:s>=40?['Matig','#F97316']:['Laag','#EF4444'];}
+
+function calcStreak(){
+  const all=getAll(),keys=Object.keys(all).sort().reverse();
+  if(!keys.length)return 0;
+  let streak=0;
+  const d=new Date();d.setHours(0,0,0,0);
+  for(let i=0;i<365;i++){
+    const s=d.toISOString().slice(0,10);
+    if(all[s]){streak++;d.setDate(d.getDate()-1);}
+    else if(i===0){d.setDate(d.getDate()-1);}
+    else break;
+  }
+  return streak;
+}
+
+function updateRing(score){
+  document.getElementById('ringFill').style.strokeDashoffset=CIRC*(1-score/100);
+  document.getElementById('scoreNum').textContent=score;
+  const [lbl,col]=scoreLabel(score);
+  const el=document.getElementById('scoreGrade');
+  el.textContent=lbl; el.style.color=col;
+  document.getElementById('ringFill').style.filter=`drop-shadow(0 0 10px ${scoreColor(score)}88)`;
+}
+
+function onSl(id,val,sfx=''){document.getElementById('v-'+id).textContent=val+sfx;liveScore();}
+
+function onSteps(val){
+  const v=Math.max(0,parseInt(val)||0);
+  document.getElementById('v-stappen').textContent=v.toLocaleString('nl');
+  document.getElementById('stepFill').style.width=Math.min(100,(v/GOAL)*100)+'%';
+  liveScore();
+}
+
+function addSteps(n){const el=document.getElementById('stappen');el.value=Math.min(99999,(parseInt(el.value)||0)+n);onSteps(el.value);}
+
+function liveScore(){updateRing(calcScore(getFormVals()));}
+
+function getFormVals(){
+  return{
+    stemming:parseInt(document.getElementById('stemming').value)||5,
+    energie:parseInt(document.getElementById('energie').value)||5,
+    slaap:parseFloat(document.getElementById('slaap').value)||0,
+    stappen:parseInt(document.getElementById('stappen').value)||0,
+    focus:parseFloat(document.getElementById('focus').value)||0,
+    buiten:parseInt(document.getElementById('buiten').value)||0,
+    notitie:document.getElementById('notitie').value.trim(),
+  };
+}
+
+function loadForm(e){
+  const set=(id,val,sfx='')=>{document.getElementById(id).value=val;document.getElementById('v-'+id).textContent=val+sfx;};
+  if(e.stemming)set('stemming',e.stemming);
+  if(e.energie)set('energie',e.energie);
+  if(e.slaap)set('slaap',e.slaap,'u');
+  if(e.focus)set('focus',e.focus,'u');
+  if(e.buiten)set('buiten',e.buiten,'min');
+  if(e.stappen){document.getElementById('stappen').value=e.stappen;onSteps(e.stappen);}
+  if(e.notitie)document.getElementById('notitie').value=e.notitie;
+}
+
+function saveDay(){
+  const entry=getFormVals();
+  entry.score=calcScore(entry);
+  entry.ts=new Date().toISOString();
+  const all=getAll();all[todayStr()]=entry;setAll(all);
+  renderStreak();toast('✓ Dag opgeslagen');
+}
+
+function openEdit(key){
+  editKey=key;
+  const e=getAll()[key]||{};
+  const d=new Date(key+'T00:00:00');
+  document.getElementById('sheetTitle').textContent=d.toLocaleDateString('nl-BE',{weekday:'long',day:'numeric',month:'long'});
+  const row=(id,lbl,min,max,step,val,sfx,col)=>`
+    <div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:7px">
+        <span style="font-size:0.8rem;font-weight:600;color:var(--text-2)">${lbl}</span>
+        <span style="font-size:0.8rem;font-weight:700;color:${col}" id="ev-${id}">${val}${sfx}</span>
+      </div>
+      <input type="range" class="sl" min="${min}" max="${max}" step="${step}" value="${val}" id="ei-${id}" style="--tc:${col}" oninput="document.getElementById('ev-${id}').textContent=this.value+'${sfx}'">
+    </div>`;
+  document.getElementById('sheetBody').innerHTML=`
+    ${row('stemming','😊 Stemming',1,10,1,e.stemming||5,'','#EF4444')}
+    ${row('energie','⚡ Energie',1,10,1,e.energie||5,'','#F59E0B')}
+    ${row('slaap','🌙 Slaap',0,12,0.5,e.slaap||7,'u','#8B5CF6')}
+    ${row('focus','🎯 Focus',0,8,0.5,e.focus||2,'u','#38BDF8')}
+    ${row('buiten','☀️ Buiten',0,180,5,e.buiten||30,'min','#10B981')}
+    <div style="margin-bottom:14px">
+      <div style="font-size:0.8rem;font-weight:600;color:var(--text-2);margin-bottom:7px">🏃 Stappen</div>
+      <input type="number" class="step-input" id="ei-stappen" value="${e.stappen||0}" min="0" max="99999">
+    </div>
+    <div>
+      <div style="font-size:0.8rem;font-weight:600;color:var(--text-2);margin-bottom:7px">✍️ Notitie</div>
+      <textarea class="note" id="ei-notitie">${e.notitie||''}</textarea>
+    </div>`;
+  document.getElementById('editOverlay').classList.add('open');
+}
+
+function saveEdit(){
+  if(!editKey)return;
+  const entry={
+    stemming:parseInt(document.getElementById('ei-stemming').value)||5,
+    energie:parseInt(document.getElementById('ei-energie').value)||5,
+    slaap:parseFloat(document.getElementById('ei-slaap').value)||0,
+    focus:parseFloat(document.getElementById('ei-focus').value)||0,
+    buiten:parseInt(document.getElementById('ei-buiten').value)||0,
+    stappen:parseInt(document.getElementById('ei-stappen').value)||0,
+    notitie:document.getElementById('ei-notitie').value.trim(),
+  };
+  entry.score=calcScore(entry);entry.ts=new Date().toISOString();
+  const all=getAll();all[editKey]=entry;setAll(all);
+  closeSheet();renderHistory();toast('✓ Dag bijgewerkt');
+}
+
+function deleteEntry(key){
+  if(!confirm('Dag verwijderen?'))return;
+  const all=getAll();delete all[key];setAll(all);
+  renderHistory();toast('Dag verwijderd');
+}
+
+function closeSheet(){document.getElementById('editOverlay').classList.remove('open');editKey=null;}
+function maybeClose(e){if(e.target===document.getElementById('editOverlay'))closeSheet();}
+
+function switchTab(name,btn){
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-'+name).classList.add('active');
+  if(name==='dashboard')renderDashboard();
+  if(name==='historiek')renderHistory();
+}
+
+function renderStreak(){
+  const s=calcStreak();
+  document.getElementById('streakNum').textContent=s;
+  if(document.getElementById('d-streak'))document.getElementById('d-streak').textContent=s;
+}
+
+function renderHistory(){
+  const all=getAll(),keys=Object.keys(all).sort().reverse();
+  const el=document.getElementById('histList');
+  document.getElementById('histTitle').textContent=`${keys.length} dag${keys.length!==1?'en':''} gelogd`;
+  if(!keys.length){el.innerHTML=`<div class="empty"><div class="empty-ico">📋</div><p class="empty-ttl">Nog niets gelogd</p><p class="empty-txt">Vul je eerste dag in via Vandaag.</p></div>`;return;}
+  el.innerHTML=keys.map(k=>{
+    const e=all[k],score=e.score||calcScore(e),c=scoreColor(score);
+    const d=new Date(k+'T00:00:00');
+    return`<div class="hist-card">
+      <div class="hist-top">
+        <div><div class="hist-day">${d.toLocaleDateString('nl-BE',{weekday:'long'})}</div>
+        <div class="hist-date-sub">${d.toLocaleDateString('nl-BE',{day:'numeric',month:'long',year:'numeric'})}</div></div>
+        <div class="hist-score" style="background:${c}18;border:1px solid ${c}40;color:${c}">${score}/100</div>
+      </div>
+      <div class="hist-metrics">
+        <div class="hm"><span class="hm-v" style="color:#F87171">${e.stemming||'—'}/10</span><span class="hm-l">Stemming</span></div>
+        <div class="hm"><span class="hm-v" style="color:#A78BFA">${e.slaap||'—'}u</span><span class="hm-l">Slaap</span></div>
+        <div class="hm"><span class="hm-v" style="color:#FCD34D">${(e.stappen||0).toLocaleString('nl')}</span><span class="hm-l">Stappen</span></div>
+        <div class="hm"><span class="hm-v" style="color:#38BDF8">${e.focus||0}u</span><span class="hm-l">Focus</span></div>
+        <div class="hm"><span class="hm-v" style="color:#34D399">${e.buiten||0}min</span><span class="hm-l">Buiten</span></div>
+      </div>
+      ${e.notitie?`<p class="hist-note">"${e.notitie}"</p>`:''}
+      <div class="hist-actions">
+        <button class="hist-btn" onclick="openEdit('${k}')">✏️ Bewerken</button>
+        <button class="hist-btn del" onclick="deleteEntry('${k}')">🗑 Verwijder</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderDashboard(){
+  const all=getAll(), keys=Object.keys(all).sort();
+  const last7k=keys.slice(-7),  last7=last7k.map(k=>all[k]);
+  const last30k=keys.slice(-30), last30=last30k.map(k=>all[k]);
+  const avg=(arr,key)=>{const v=arr.map(e=>e[key]||0).filter(Boolean);return v.length?(v.reduce((a,b)=>a+b,0)/v.length):null;};
+
+  // Stats (7-daags gemiddelde)
+  const aScore=avg(last7,'score');
+  if(aScore!=null){document.getElementById('d-avgScore').textContent=Math.round(aScore);document.getElementById('c-avgScore').textContent=Math.round(aScore);}
+  const aSl=avg(last7,'slaap');if(aSl!=null)document.getElementById('d-slaap').textContent=aSl.toFixed(1);
+  const aSt=avg(last7,'stappen');if(aSt!=null)document.getElementById('d-stappen').textContent=Math.round(aSt).toLocaleString('nl');
+  renderStreak();
+
+  const gc='rgba(255,255,255,0.05)',tc={color:'#475569',font:{size:10,family:"'Inter',sans-serif"}};
+  const tip={backgroundColor:'rgba(12,17,24,0.96)',borderColor:'rgba(255,255,255,0.12)',borderWidth:1,titleColor:'#F1F5F9',bodyColor:'#94A3B8',padding:10,displayColors:false};
+  const base={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:tip},scales:{x:{grid:{color:gc},ticks:tc},y:{grid:{color:gc},ticks:tc}}};
+  const labels7=last7k.map(k=>new Date(k+'T00:00:00').toLocaleDateString('nl-BE',{weekday:'short'}));
+
+  // Score grafiek — 30 dagen
+  const labels30=last30k.map(k=>{const d=new Date(k+'T00:00:00');return d.getDate()+'/'+(d.getMonth()+1);});
+  const scores30=last30.map(e=>e.score||calcScore(e));
+  const avg30=scores30.length?Math.round(scores30.reduce((a,b)=>a+b,0)/scores30.length):null;
+  if(avg30!=null){document.getElementById('c-avgScore').textContent=avg30;}
+  buildChart('cScore','line',labels30,[{
+    data:scores30,
+    borderColor:'#8B5CF6',borderWidth:2,
+    pointBackgroundColor:scores30.map(s=>scoreColor(s)),
+    pointBorderColor:'#070B14',pointBorderWidth:1.5,
+    pointRadius:last30.length>14?3:5,
+    tension:0.35,fill:true,
+    backgroundColor:ctx=>{const g=ctx.chart.ctx.createLinearGradient(0,0,0,130);g.addColorStop(0,'rgba(139,92,246,0.22)');g.addColorStop(1,'rgba(139,92,246,0.01)');return g;}
+  }],{
+    ...base,
+    plugins:{...base.plugins,tooltip:{...tip,callbacks:{label:c=>`  Score: ${c.parsed.y}/100`}}},
+    scales:{...base.scales,
+      x:{...base.scales.x,ticks:{...tc,maxTicksLimit:8}},
+      y:{...base.scales.y,min:0,max:100,ticks:{...tc,stepSize:25}}
+    }
   });
 
-  /* ── Form ── */
-  function changeSteps(n) {
-    const el = document.getElementById('stappen');
-    el.value = Math.max(0, (parseInt(el.value) || 0) + n);
-    updateSteps();
+  // Score opbouw — laatste gelogde dag
+  const lastKey=keys[keys.length-1];
+  if(lastKey){
+    const e=all[lastKey];
+    const slaapPts=e.slaap<4?0:e.slaap<6?6:e.slaap<7?13:e.slaap<=9?20:14;
+    const breakdown=[
+      {lbl:'😊 Stemming', pts:Math.round(((e.stemming||5)/10)*20), max:20, col:'#F87171'},
+      {lbl:'⚡ Energie',   pts:Math.round(((e.energie||5)/10)*20),  max:20, col:'#FCD34D'},
+      {lbl:'🌙 Slaap',    pts:slaapPts,                             max:20, col:'#A78BFA'},
+      {lbl:'🏃 Stappen',  pts:Math.round(Math.min((e.stappen||0)/GOAL,1)*15), max:15, col:'#F59E0B'},
+      {lbl:'🎯 Focus',    pts:Math.round(Math.min((e.focus||0)/4,1)*15),      max:15, col:'#38BDF8'},
+      {lbl:'☀️ Buiten',   pts:Math.round(Math.min((e.buiten||0)/60,1)*10),    max:10, col:'#34D399'},
+    ];
+    const dayLbl=new Date(lastKey+'T00:00:00').toLocaleDateString('nl-BE',{weekday:'short',day:'numeric',month:'short'});
+    document.getElementById('breakdownLbl').textContent=dayLbl;
+    document.getElementById('scoreBreakdown').innerHTML=breakdown.map(b=>`
+      <div class="breakdown-row">
+        <span class="breakdown-lbl">${b.lbl}</span>
+        <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:${Math.round(b.pts/b.max*100)}%;background:${b.col}"></div></div>
+        <span class="breakdown-pts" style="color:${b.col}">${b.pts}/${b.max}</span>
+      </div>`).join('');
+    document.getElementById('breakdownCard').style.display='block';
   }
 
-  function updateSteps() {
-    const v = Math.max(0, parseInt(document.getElementById('stappen').value) || 0);
-    document.getElementById('stepsDisplay').textContent = v.toLocaleString('nl');
-    const pct = Math.min(100, (v / GOAL) * 100);
-    document.getElementById('ringFill').style.strokeDashoffset = CIRC * (1 - pct / 100);
-    document.getElementById('ringPct').textContent = Math.round(pct) + '%';
-    document.getElementById('stepsStatus').textContent =
-      v === 0        ? 'Nog niet gestart' :
-      v < 3000       ? 'Kleine wandeling'  :
-      v < 6000       ? 'Goed bezig!'       :
-      v < 10000      ? 'Bijna op doel 💪'  : 'Doel bereikt! 🎉';
-  }
+  // Stappen grafiek — 7 dagen
+  buildChart('cStappen','bar',labels7,[{
+    data:last7.map(e=>e.stappen||0),
+    backgroundColor:ctx=>{const g=ctx.chart.ctx.createLinearGradient(0,0,0,110);g.addColorStop(0,'rgba(245,158,11,0.85)');g.addColorStop(1,'rgba(245,158,11,0.2)');return g;},
+    borderColor:'#F59E0B',borderWidth:1.5,borderRadius:6,
+  }],{...base,scales:{...base.scales,y:{...base.scales.y,min:0,ticks:{...tc,callback:v=>v>=1000?Math.round(v/1000)+'k':v}}}});
 
-  function updateSlaap() {
-    const v = parseFloat(document.getElementById('slaap').value);
-    document.getElementById('slaapBig').textContent = Math.floor(v) + (v % 1 ? '½' : '');
-    document.getElementById('slaapStatus').textContent =
-      v < 5   ? 'Te weinig slaap 😬' :
-      v < 6.5 ? 'Iets te kort 😕'    :
-      v < 8.5 ? 'Goed geslapen 👍'   : 'Lekker lang geslapen 😴';
-  }
-
-  function selectMood(n, btn) {
-    document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
-    btn.classList.add('selected');
-    selectedMood = n;
-  }
-
-  /* ── Data ── */
-  function today() { return new Date().toISOString().slice(0, 10); }
-  function getAll() {
-    try { return JSON.parse(localStorage.getItem('dagboek') || '{}'); } catch { return {}; }
-  }
-
-  function save() {
-    if (!selectedMood) { showToast('Kies eerst je humeur 👆', '#ef4444'); return; }
-    const all = getAll();
-    all[today()] = {
-      stappen: parseInt(document.getElementById('stappen').value) || 0,
-      slaap:   parseFloat(document.getElementById('slaap').value),
-      humeur:  selectedMood,
-    };
-    localStorage.setItem('dagboek', JSON.stringify(all));
-    renderAll();
-    showToast('Dag opgeslagen ✓', '#22c55e');
-  }
-
-  function deleteEntry(k) {
-    const all = getAll();
-    delete all[k];
-    localStorage.setItem('dagboek', JSON.stringify(all));
-    renderAll();
-  }
-
-  function exportData() {
-    const all = getAll();
-    if (!Object.keys(all).length) { showToast('Geen data om te exporteren', '#ef4444'); return; }
-    const blob = new Blob([JSON.stringify(all, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'dagboek.json'; a.click();
-    URL.revokeObjectURL(url);
-    showToast('Bestand gedownload ✓', '#38bdf8');
-  }
-
-  function importData(input) {
-    const file = input.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      try {
-        const imp = JSON.parse(e.target.result);
-        if (typeof imp !== 'object' || Array.isArray(imp)) throw new Error();
-        localStorage.setItem('dagboek', JSON.stringify({ ...getAll(), ...imp }));
-        renderAll();
-        showToast(`${Object.keys(imp).length} dagen geïmporteerd ✓`, '#22c55e');
-      } catch { showToast('Ongeldig bestand', '#ef4444'); }
-      input.value = '';
-    };
-    reader.readAsText(file);
-  }
-
-  /* ── Render ── */
-  function renderAll() {
-    renderHistory();
-    renderCharts();
-  }
-
-  function renderHistory() {
-    const all = getAll();
-    const keys = Object.keys(all).sort().reverse();
-    const el = document.getElementById('history');
-    document.getElementById('histCount').textContent = keys.length + (keys.length === 1 ? ' dag' : ' dagen');
-
-    if (!keys.length) {
-      el.innerHTML = `<div class="empty-state">
-        <div class="empty-icon">📋</div>
-        <div class="empty-text">Nog niets opgeslagen.<br>Vul je eerste dag in hierboven.</div>
-      </div>`;
-      return;
+  // Slaap + stemming — 7 dagen
+  buildChart('cSlaapMood','line',labels7,[
+    {data:last7.map(e=>e.slaap||0),label:'Slaap',borderColor:'#A78BFA',borderWidth:2,pointBackgroundColor:'#A78BFA',pointBorderColor:'#070B14',pointBorderWidth:1.5,pointRadius:4,tension:0.4,yAxisID:'ySl'},
+    {data:last7.map(e=>e.stemming||0),label:'Stemming',borderColor:'#F87171',borderWidth:2,pointBackgroundColor:'#F87171',pointBorderColor:'#070B14',pointBorderWidth:1.5,pointRadius:4,tension:0.4,yAxisID:'yMd'},
+  ],{
+    ...base,
+    plugins:{...base.plugins,legend:{display:true,labels:{color:'#64748b',font:{size:10,family:"'Inter',sans-serif"},boxWidth:10,boxHeight:10}}},
+    scales:{x:base.scales.x,
+      ySl:{...base.scales.y,position:'left',min:0,max:12,ticks:{...tc,callback:v=>v+'u'}},
+      yMd:{...base.scales.y,position:'right',min:0,max:10,grid:{display:false},ticks:{...tc}},
     }
+  });
 
-    el.innerHTML = keys.map(k => {
-      const e = all[k];
-      const d = new Date(k + 'T00:00:00');
-      return `
-      <div class="history-item">
-        <div class="hi-date">
-          <div class="hi-day">${d.toLocaleDateString('nl-BE', { weekday: 'long' })}</div>
-          <div class="hi-date-sub">${d.toLocaleDateString('nl-BE', { day: 'numeric', month: 'long' })}</div>
-        </div>
-        <div class="hi-stats">
-          <div class="hi-stat hi-steps">
-            <span class="hi-val">${e.stappen.toLocaleString('nl')}</span>
-            <span class="hi-lbl">stappen</span>
-          </div>
-          <div class="hi-divider"></div>
-          <div class="hi-stat hi-sleep">
-            <span class="hi-val">${e.slaap}u</span>
-            <span class="hi-lbl">slaap</span>
-          </div>
-          <div class="hi-divider"></div>
-          <div class="hi-stat hi-mood">
-            <span class="hi-val">${MOODS[e.humeur]}</span>
-            <span class="hi-lbl">humeur</span>
-          </div>
-        </div>
-        <button class="hi-del" onclick="deleteEntry('${k}')" title="Verwijder">✕</button>
-      </div>`;
-    }).join('');
+  // ── INZICHTEN ──
+  const vals=Object.values(all);
+  const insights=[];
+  const a2=(arr,k)=>{const v=arr.map(e=>e[k]||0).filter(Boolean);return v.length?(v.reduce((a,b)=>a+b,0)/v.length):0;};
+
+  // 1. Stappen vs stemming
+  const act=vals.filter(e=>e.stappen>=8000), lzy=vals.filter(e=>e.stappen>0&&e.stappen<8000);
+  if(act.length>=2&&lzy.length>=2){
+    const mA=a2(act,'stemming'),mL=a2(lzy,'stemming'),d=mA-mL;
+    if(Math.abs(d)>0.5) insights.push({ico:'🏃',txt:d>0
+      ?`Je stemming is gemiddeld <strong>${d.toFixed(1)} punten hoger</strong> op dagen met meer dan 8.000 stappen (${mA.toFixed(1)}/10 vs ${mL.toFixed(1)}/10).`
+      :`Op dagen met minder stappen scoort je stemming net iets hoger — rust heeft ook waarde.`});
   }
 
-  function renderCharts() {
-    const all = getAll();
-    const keys = Object.keys(all).sort().slice(-14); // last 14 days
+  // 2. Buiten vs focus
+  const out=vals.filter(e=>e.buiten>=30), inn=vals.filter(e=>e.buiten>=0&&e.buiten<30);
+  if(out.length>=2&&inn.length>=2){
+    const d=a2(out,'focus')-a2(inn,'focus');
+    if(d>0.3) insights.push({ico:'☀️',txt:`Je focus stijgt gemiddeld met <strong>${d.toFixed(1)} uur</strong> op dagen dat je minstens 30 minuten buiten bent geweest.`});
+  }
 
-    const labels = keys.map(k => {
-      const d = new Date(k + 'T00:00:00');
-      return d.toLocaleDateString('nl-BE', { day: 'numeric', month: 'short' });
-    });
+  // 3. Slaap vs stemming
+  const gSl=vals.filter(e=>e.slaap>=7.5), bSl=vals.filter(e=>e.slaap>0&&e.slaap<7.5);
+  if(gSl.length>=2&&bSl.length>=2){
+    const mG=a2(gSl,'stemming'),mB=a2(bSl,'stemming'),d=mG-mB;
+    if(d>0.5) insights.push({ico:'🌙',txt:`Na 7.5u+ slaap scoor je stemming gemiddeld <strong>${mG.toFixed(1)}/10</strong>, tegenover <strong>${mB.toFixed(1)}/10</strong> na minder slaap.`});
+  }
 
-    const stappen = keys.map(k => all[k].stappen);
-    const slaap   = keys.map(k => all[k].slaap);
-    const humeur  = keys.map(k => all[k].humeur);
+  // 4. Slaap vs Dopamine Score
+  if(gSl.length>=2&&bSl.length>=2){
+    const d=a2(gSl,'score')-a2(bSl,'score');
+    if(d>3) insights.push({ico:'📊',txt:`Je Dopamine Score is gemiddeld <strong>${Math.round(d)} punten hoger</strong> op dagen na een goede nacht slaap (7.5u+).`});
+  }
 
-    // Averages
-    const avg = arr => arr.length ? arr.reduce((a,b) => a+b, 0) / arr.length : null;
+  // 5. Buiten vs stemming
+  const out2=vals.filter(e=>e.buiten>=45), inn2=vals.filter(e=>e.buiten<45);
+  if(out2.length>=2&&inn2.length>=2){
+    const d=a2(out2,'stemming')-a2(inn2,'stemming');
+    if(d>0.6) insights.push({ico:'🌳',txt:`Na 45+ minuten buiten is je stemming gemiddeld <strong>${d.toFixed(1)} punt hoger</strong> dan op dagen binnenshuis.`});
+  }
 
-    if (stappen.length) {
-      document.getElementById('avgStappen').innerHTML =
-        `gem. <span>${Math.round(avg(stappen)).toLocaleString('nl')} stappen</span>`;
-      document.getElementById('avgSlaap').innerHTML =
-        `gem. <span>${avg(slaap).toFixed(1)}u slaap</span>`;
-      const moodAvg = avg(humeur);
-      document.getElementById('avgHumeur').innerHTML =
-        `gem. <span>${MOODS[Math.round(moodAvg)]} (${moodAvg.toFixed(1)})</span>`;
+  // 6. Focus vs energie
+  const focH=vals.filter(e=>e.focus>=3), focL=vals.filter(e=>e.focus>0&&e.focus<3);
+  if(focH.length>=2&&focL.length>=2){
+    const d=a2(focH,'energie')-a2(focL,'energie');
+    if(Math.abs(d)>0.5) insights.push({ico:'🎯',txt:d>0
+      ?`Op focusdagen (3u+) is je energie gemiddeld <strong>${d.toFixed(1)} punt hoger</strong> — diep werk geeft energie.`
+      :`Op focusdagen voel je je iets vermoeider — zorg voor voldoende pauzes.`});
+  }
+
+  // 7. Beste dag ooit
+  const best=Object.entries(all).reduce((a,b)=>(b[1].score||0)>(a[1].score||0)?b:a,['',{score:0}]);
+  if(best[0]){
+    const e=best[1],dn=new Date(best[0]+'T00:00:00').toLocaleDateString('nl-BE',{weekday:'long',day:'numeric',month:'long'});
+    insights.push({ico:'⭐',txt:`Je hoogste score was <strong>${e.score}/100</strong> op ${dn}. Die dag: ${e.slaap}u slaap, ${(e.stappen||0).toLocaleString('nl')} stappen, ${e.focus}u focus.`});
+  }
+
+  // 8. Streak motivatie
+  const st=calcStreak();
+  if(st>=3) insights.push({ico:'🔥',txt:`Je bent al <strong>${st} dagen op rij</strong> actief bezig. Hou het vast!`});
+  else if(!st) insights.push({ico:'💡',txt:`Begin vandaag met loggen en bouw een streak op!`});
+
+  if(!insights.length) insights.push({ico:'💡',txt:'Log meer dagen om persoonlijke inzichten te zien.'});
+  document.getElementById('insightsWrap').innerHTML=insights.map(i=>`<div class="insight-card"><div class="insight-ico">${i.ico}</div><p class="insight-txt">${i.txt}</p></div>`).join('');
+
+  // Badges
+  const streak=calcStreak();
+  document.getElementById('badgesWrap').innerHTML=BADGES_DEF.map(b=>`
+    <div class="badge-item">
+      <div class="badge-ico ${b.fn(all,streak)?'on':'off'}">${b.ico}</div>
+      <span class="badge-lbl">${b.lbl}</span>
+    </div>`).join('');
+}
+
+function buildChart(id,type,labels,datasets,options){
+  if(charts[id]){charts[id].destroy();delete charts[id];}
+  const ctx=document.getElementById(id);if(!ctx)return;
+  charts[id]=new Chart(ctx.getContext('2d'),{type,data:{labels,datasets},options});
+}
+
+function exportData(){
+  const all=getAll();if(!Object.keys(all).length){toast('Geen data');return;}
+  const blob=new Blob([JSON.stringify(all,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='dopamine-coach.json';a.click();URL.revokeObjectURL(url);
+  toast('↓ Gedownload');
+}
+
+function importData(input){
+  const file=input.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{const imp=JSON.parse(e.target.result);if(typeof imp!=='object'||Array.isArray(imp))throw 0;setAll({...getAll(),...imp});renderHistory();renderStreak();toast(`↑ ${Object.keys(imp).length} dagen geladen`);}
+    catch{toast('Ongeldig bestand');}
+    input.value='';
+  };
+  r.readAsText(file);
+}
+
+function toast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+function init(){
+  document.getElementById('headerDate').textContent=new Date().toLocaleDateString('nl-BE',{weekday:'long',day:'numeric',month:'long'});
+  try{
+    const old=JSON.parse(localStorage.getItem('dagboek')||'{}');
+    if(Object.keys(old).length){
+      const cur=getAll();
+      Object.entries(old).forEach(([k,e])=>{if(!cur[k]){cur[k]={stemming:(e.humeur||3)*2,energie:5,slaap:e.slaap||7,stappen:e.stappen||0,focus:2,buiten:30,notitie:''};cur[k].score=calcScore(cur[k]);}});
+      setAll(cur);
     }
+  }catch{}
+  const saved=getAll()[todayStr()];
+  if(saved)loadForm(saved);
+  liveScore();
+  renderStreak();
+}
 
-    const gridColor = 'rgba(255,255,255,0.05)';
-    const tickColor = '#475569';
-    const baseOpts = {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { displayColors: false, padding: 10,
-        backgroundColor: 'rgba(15,20,40,0.95)', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1,
-        titleFont: { weight: '600', size: 12 }, bodyFont: { size: 12 } } },
-      scales: {
-        x: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 10 } } },
-        y: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 10 } } }
-      }
-    };
-
-    /* Steps — bar chart */
-    buildChart('chartStappen', 'bar', labels, [{
-      data: stappen,
-      backgroundColor: ctx => {
-        const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 130);
-        g.addColorStop(0, 'rgba(245,158,11,0.85)');
-        g.addColorStop(1, 'rgba(245,158,11,0.2)');
-        return g;
-      },
-      borderColor: '#f59e0b',
-      borderWidth: 1.5,
-      borderRadius: 6,
-      hoverBackgroundColor: '#f59e0b',
-    }], {
-      ...baseOpts,
-      plugins: { ...baseOpts.plugins,
-        tooltip: { ...baseOpts.plugins.tooltip,
-          callbacks: { label: c => `  ${c.parsed.y.toLocaleString('nl')} stappen` } },
-        annotation: keys.length ? {
-          annotations: { goal: {
-            type: 'line', yMin: GOAL, yMax: GOAL,
-            borderColor: 'rgba(245,158,11,0.4)', borderWidth: 1,
-            borderDash: [4, 4],
-            label: { content: 'doel', display: true, position: 'end',
-              color: 'rgba(245,158,11,0.6)', font: { size: 10 }, backgroundColor: 'transparent' }
-          }}
-        } : {}
-      },
-      scales: { ...baseOpts.scales, y: { ...baseOpts.scales.y, min: 0,
-        ticks: { ...baseOpts.scales.y.ticks, callback: v => v >= 1000 ? (v/1000)+'k' : v } } }
-    });
-
-    /* Sleep — line chart with fill */
-    buildChart('chartSlaap', 'line', labels, [{
-      data: slaap,
-      borderColor: '#a78bfa',
-      borderWidth: 2.5,
-      pointBackgroundColor: '#a78bfa',
-      pointBorderColor: '#060912',
-      pointBorderWidth: 2,
-      pointRadius: 5,
-      pointHoverRadius: 7,
-      tension: 0.4,
-      fill: true,
-      backgroundColor: ctx => {
-        const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 130);
-        g.addColorStop(0, 'rgba(167,139,250,0.3)');
-        g.addColorStop(1, 'rgba(167,139,250,0.02)');
-        return g;
-      },
-    }], {
-      ...baseOpts,
-      plugins: { ...baseOpts.plugins,
-        tooltip: { ...baseOpts.plugins.tooltip,
-          callbacks: { label: c => `  ${c.parsed.y}u slaap` } } },
-      scales: { ...baseOpts.scales,
-        y: { ...baseOpts.scales.y, min: 0, max: 12,
-          ticks: { ...baseOpts.scales.y.ticks, callback: v => v + 'u', stepSize: 3 } } }
-    });
-
-    /* Mood — line chart with colored points */
-    const moodPointColors = humeur.map(h => MOOD_COLORS[h] || '#64748b');
-    buildChart('chartHumeur', 'line', labels, [{
-      data: humeur,
-      borderColor: 'rgba(99,102,241,0.6)',
-      borderWidth: 2,
-      pointBackgroundColor: moodPointColors,
-      pointBorderColor: '#060912',
-      pointBorderWidth: 2,
-      pointRadius: 7,
-      pointHoverRadius: 9,
-      tension: 0.4,
-      fill: true,
-      backgroundColor: ctx => {
-        const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 130);
-        g.addColorStop(0, 'rgba(99,102,241,0.2)');
-        g.addColorStop(1, 'rgba(99,102,241,0.02)');
-        return g;
-      },
-    }], {
-      ...baseOpts,
-      plugins: { ...baseOpts.plugins,
-        tooltip: { ...baseOpts.plugins.tooltip,
-          callbacks: { label: c => `  ${MOODS[c.parsed.y]}` } } },
-      scales: { ...baseOpts.scales,
-        y: { ...baseOpts.scales.y, min: 0.5, max: 5.5, stepSize: 1,
-          ticks: { ...baseOpts.scales.y.ticks,
-            callback: v => ['','😣','😕','😐','🙂','😄'][v] || '' } } }
-    });
-  }
-
-  function buildChart(id, type, labels, datasets, options) {
-    if (charts[id]) charts[id].destroy();
-    const ctx = document.getElementById(id).getContext('2d');
-    charts[id] = new Chart(ctx, { type, data: { labels, datasets }, options });
-  }
-
-  /* ── Tabs ── */
-  function switchTab(name, btn) {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('tab-' + name).classList.add('active');
-    if (name === 'grafieken') renderCharts();
-  }
-
-  /* ── Toast ── */
-  function showToast(msg, color = '#22c55e') {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.style.background = `linear-gradient(135deg, ${color}, ${color}cc)`;
-    t.style.boxShadow = `0 4px 20px ${color}55`;
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2400);
-  }
-
-  /* ── Init ── */
-  updateSteps();
-  updateSlaap();
-  renderAll();
-
-  const saved = getAll()[today()];
-  if (saved) {
-    document.getElementById('stappen').value = saved.stappen;
-    updateSteps();
-    document.getElementById('slaap').value = saved.slaap;
-    updateSlaap();
-    document.querySelectorAll('.mood-btn')[saved.humeur - 1]?.click();
-  }
+init();
 </script>
 </body>
 </html>
